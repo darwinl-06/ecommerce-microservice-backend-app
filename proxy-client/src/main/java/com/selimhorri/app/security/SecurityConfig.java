@@ -22,17 +22,17 @@ import lombok.RequiredArgsConstructor;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-	
+
 	private final UserDetailsService userDetailsService;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtRequestFilter jwtRequestFilter;
-	
+
 	@Override
 	protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
 		auth.userDetailsService(this.userDetailsService)
 			.passwordEncoder(this.passwordEncoder);
 	}
-	
+
 	@Override
 	protected void configure(final HttpSecurity http) throws Exception {
 		http.cors().disable()
@@ -43,8 +43,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				.antMatchers("/api/authenticate/**").permitAll()
 				.antMatchers("/api/categories/**").permitAll()
 				.antMatchers("/api/products/**").permitAll()
+				.antMatchers(HttpMethod.POST, "/api/users").permitAll()
+				.antMatchers("/swagger-ui.html","/swagger-ui/","/v3/api-docs/",
+						"/v3/api-docs.yaml", "/api-docs/","/swagger-resources/",
+						"/webjars/**").permitAll()
 				.antMatchers("/api/**")
-					.hasAnyRole(RoleBasedAuthority.ROLE_USER.getRole(), 
+					.hasAnyRole(RoleBasedAuthority.ROLE_USER.getRole(),
 							RoleBasedAuthority.ROLE_ADMIN.getRole())
 				.antMatchers("/actuator/health/**", "/actuator/info/**")
 					.permitAll()
@@ -61,15 +65,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			.and()
 			.addFilterBefore(this.jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 	}
-	
+
 	@Bean
 	@Override
 	public AuthenticationManager authenticationManagerBean() throws Exception {
 		return super.authenticationManagerBean();
 	}
-	
-	
-	
+
+
+
 }
 
 
