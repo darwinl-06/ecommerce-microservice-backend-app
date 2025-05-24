@@ -1,9 +1,10 @@
 pipeline {
     agent any
-     tools {
+
+    tools {
         maven 'mvn'
         jdk 'JDK_11'
-     }
+    }
 
     environment {
         DOCKERHUB_USER = 'darwinl06'
@@ -74,17 +75,14 @@ pipeline {
 
                 bat 'kubectl apply -f k8s\\cloud-config --namespace=ecommerce-app'
                 bat 'kubectl wait --for=condition=ready pod -l app=cloud-config -n ecommerce-app --timeout=300s'
-
             }
         }
 
         stage('Deploy to Minikube') {
             steps {
                 echo 'Deploying services to Minikube...'
-
             }
         }
-    }
     }
 
     post {
