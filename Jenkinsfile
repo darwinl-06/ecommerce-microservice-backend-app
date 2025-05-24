@@ -1,5 +1,9 @@
 pipeline {
     agent any
+     tools {
+        maven 'mvn'
+        jdk 'JDK_11'
+     }
 
     environment {
         DOCKERHUB_USER = 'darwinl06'
@@ -78,13 +82,7 @@ pipeline {
         stage('Deploy to Minikube') {
             steps {
                 echo 'Deploying services to Minikube...'
-                script {
-                    SERVICES.split().each { service ->
-                        if (!(["cloud-config", "service-discovery"].contains(service))) {
-                            bat "kubectl apply -f k8s\\${service}\\"
-                        }
-                    }
-                }
+
             }
         }
     }
