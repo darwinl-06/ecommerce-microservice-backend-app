@@ -37,6 +37,7 @@ pipeline {
             steps {
                 script {
                     SERVICES.split().each { service ->
+                        bat "cd ${service} && mvn clean package -DskipTests"
                         bat "docker build -t %DOCKERHUB_USER%/${service}:latest .\\${service}"
                     }
                 }
@@ -80,7 +81,30 @@ pipeline {
 
         stage('Deploy to Minikube') {
             steps {
-                echo 'Deploying services to Minikube...'
+                bat 'kubectl apply -f k8s\\api-gateway --namespace=ecommerce-app'
+                bat 'kubectl wait --for=condition=ready pod -l app=api-gateway  -n ecommerce-app --timeout=200s'
+
+                bat 'kubectl apply -f k8s\\user-service --namespace=ecommerce-app'
+                bat 'kubectl wait --for=condition=ready pod -l app=user-service -n ecommerce-app --timeout=200s'
+
+                bat 'kubectl apply -f k8s\\proxy-client --namespace=ecommerce-app'
+                bat 'kubectl wait --for=condition=ready pod -l app=proxy-client -n ecommerce-app --timeout=300s'
+
+                bat 'kubectl apply -f k8s\\product-service --namespace=ecommerce-app'
+                bat 'kubectl wait --for=condition=ready pod -l app=product-service -n ecommerce-app --timeout=200s'
+
+                bat 'kubectl apply -f k8s\\shipping-service --namespace=ecommerce-app'
+                bat 'kubectl wait --for=condition=ready pod -l app=shipping-service -n ecommerce-app --timeout=200s'
+
+                bat 'kubectl apply -f k8s\\order-service --namespace=ecommerce-app'
+                bat 'kubectl wait --for=condition=ready pod -l app=order-service -n ecommerce-app --timeout=300s'
+
+                bat 'kubectl apply -f k8s\\favourite-service --namespace=ecommerce-app'
+                bat 'kubectl wait --for=condition=ready pod -l app=favourite-service -n ecommerce-app --timeout=200s'
+
+                bat 'kubectl apply -f k8s\\payment-service --namespace=ecommerce-app'
+                bat 'kubectl wait --for=condition=ready pod -l app=payment-service -n ecommerce-app --timeout=200s'
+
             }
         }
     }
