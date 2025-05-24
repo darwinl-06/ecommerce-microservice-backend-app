@@ -9,3 +9,6 @@ EXPOSE 9296
 ENTRYPOINT ["java", "-jar", "cloud-config.jar"]
 
 
+
+
+
