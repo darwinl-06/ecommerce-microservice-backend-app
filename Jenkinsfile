@@ -73,7 +73,7 @@ pipeline {
                 bat 'kubectl wait --for=condition=ready pod -l app=service-discovery -n ecommerce-app --timeout=120s'
 
                 bat 'kubectl apply -f k8s\\cloud-config --namespace=ecommerce-app'
-                bat 'kubectl wait --for=condition=ready pod -l app=cloud-config -n ecommerce-app --timeout=120s'
+                bat 'kubectl wait --for=condition=ready pod -l app=cloud-config -n ecommerce-app --timeout=300s'
 
             }
         }
