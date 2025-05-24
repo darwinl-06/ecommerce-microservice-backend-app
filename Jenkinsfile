@@ -14,12 +14,18 @@ pipeline {
 
     stages {
         stage('Checkout') {
+            when {
+                branch 'dev'
+            }
             steps {
-                git branch: 'master', url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
+                git branch: 'dev', url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
             }
         }
 
         stage('Verify Tools') {
+            when {
+                branch 'dev'
+            }
             steps {
                 bat 'java -version'
                 bat 'docker --version'
@@ -28,15 +34,20 @@ pipeline {
         }
 
         stage('Check Kube Context') {
+            when {
+                branch 'dev'
+            }
             steps {
                 bat 'kubectl config current-context'
             }
         }
 
         stage('Build Docker Images') {
+            when {
+                branch 'dev'
+            }
             steps {
                 script {
-
                     bat "mvn clean package -DskipTests"
                     SERVICES.split().each { service ->
                         bat "docker build -t %DOCKERHUB_USER%/${service}:latest .\\${service}"
@@ -46,6 +57,9 @@ pipeline {
         }
 
         stage('Push Docker Images') {
+            when {
+                branch 'dev'
+            }
             steps {
                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
                     bat 'echo %DOCKERHUB_PASSWORD% | docker login -u %DOCKERHUB_USER% --password-stdin'
@@ -59,6 +73,9 @@ pipeline {
         }
 
         stage('Deploy common configuration') {
+            when {
+                branch 'dev'
+            }
             steps {
                 bat """
                 echo Applying common configuration...
@@ -68,6 +85,9 @@ pipeline {
         }
 
         stage('Deploy core services to k8s in minikube') {
+            when {
+                branch 'dev'
+            }
             steps {
                 bat 'kubectl apply -f k8s\\zipkin --namespace=ecommerce-app'
                 bat 'kubectl wait --for=condition=ready pod -l app=zipkin -n ecommerce-app --timeout=200s'
@@ -81,8 +101,11 @@ pipeline {
         }
 
         stage('Deploy to Minikube') {
+            when {
+                branch 'dev'
+            }
             steps {
-
+                echo 'Deployment logic to Minikube goes here...'
             }
         }
     }
