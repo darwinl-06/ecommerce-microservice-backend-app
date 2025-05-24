@@ -26,12 +26,6 @@ pipeline {
             }
         }
 
-        stage('Build with Maven') {
-            steps {
-                bat 'mvn clean install -DskipTests'
-            }
-        }
-
         stage('Build Docker Images') {
             steps {
                 script {
