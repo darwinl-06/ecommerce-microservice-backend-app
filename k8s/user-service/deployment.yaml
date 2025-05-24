@@ -62,7 +62,7 @@ spec:
             httpGet:
               path: /user-service/actuator/health
               port: 8700
-            initialDelaySeconds: 30
+            initialDelaySeconds: 90
             periodSeconds: 10
             failureThreshold: 3
           volumeMounts:
