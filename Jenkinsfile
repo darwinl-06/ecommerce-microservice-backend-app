@@ -15,7 +15,7 @@ pipeline {
     stages {
         stage('Checkout') {
             when {
-                branch 'dev'
+                branch 'master'
             }
             steps {
                 git branch: 'dev', url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
@@ -24,7 +24,7 @@ pipeline {
 
         stage('Verify Tools') {
             when {
-                branch 'dev'
+                branch 'master'
             }
             steps {
                 bat 'java -version'
@@ -35,7 +35,7 @@ pipeline {
 
         stage('Check Kube Context') {
             when {
-                branch 'dev'
+                branch 'master'
             }
             steps {
                 bat 'kubectl config current-context'
@@ -44,7 +44,7 @@ pipeline {
 
         stage('Build Docker Images') {
             when {
-                branch 'dev'
+                branch 'master'
             }
             steps {
                 script {
@@ -58,7 +58,7 @@ pipeline {
 
         stage('Push Docker Images') {
             when {
-                branch 'dev'
+                branch 'master'
             }
             steps {
                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
@@ -74,7 +74,7 @@ pipeline {
 
         stage('Deploy common configuration') {
             when {
-                branch 'dev'
+                branch 'master'
             }
             steps {
                 bat """
@@ -86,7 +86,7 @@ pipeline {
 
         stage('Deploy core services to k8s in minikube') {
             when {
-                branch 'dev'
+                branch 'master'
             }
             steps {
                 bat 'kubectl apply -f k8s\\zipkin --namespace=ecommerce-app'
@@ -102,7 +102,7 @@ pipeline {
 
         stage('Deploy to Minikube') {
             when {
-                branch 'dev'
+                branch 'master'
             }
             steps {
                 echo 'Deployment logic to Minikube goes here...'
