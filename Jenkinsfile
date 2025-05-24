@@ -26,6 +26,12 @@ pipeline {
             }
         }
 
+        stage('Check Kube Context') {
+            steps {
+                bat 'kubectl config current-context'
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 script {
