@@ -51,12 +51,36 @@ pipeline {
             }
         }
 
+        // 👇 NUEVAS ETAPAS AÑADIDAS AQUÍ
+        stage('Deploy common configuration') {
+            steps {
+                sh """
+                echo "Applying common configuration..."
+                kubectl apply -f k8s/common-config.yaml
+                """
+            }
+        }
+
+        stage('Deploy core services to k8s in minikube') {
+            steps {
+                sh """
+                kubectl apply -f k8s/zipkin/
+                kubectl wait --for=condition=ready pod -l app=zipkin --timeout=120s
+
+                kubectl apply -f k8s/service-discovery/
+                kubectl wait --for=condition=ready pod -l app=service-discovery --timeout=120s
+
+                kubectl apply -f k8s/cloud-config/
+                kubectl wait --for=condition=ready pod -l app=cloud-config --timeout=120s
+                """
+            }
+        }
+
         stage('Deploy to Minikube') {
             steps {
                 echo 'Deploying services to Minikube...'
-                // Reemplaza esto con tus archivos reales de despliegue
-                // Por ejemplo:
-                // sh 'kubectl apply -f k8s/configmap.yaml'
+                // Agrega aquí los `kubectl apply` para tus servicios restantes
+                // Ejemplo:
                 // sh 'kubectl apply -f k8s/deployments/'
                 // sh 'kubectl apply -f k8s/services/'
             }
