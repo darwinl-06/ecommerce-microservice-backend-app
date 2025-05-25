@@ -106,7 +106,7 @@ pipeline {
                     steps {
                         script {
                             echo "🧪 Running Integration Tests for ${env.BRANCH_NAME}"
-                            bat "mvn failsafe:integration-test failsafe:verify -DfailIfNoTests=false -Dtest=*ControllerIntegrationTest"
+                            bat "mvn clean verify -Dit.test=*ControllerTest.java -DfailIfNoTests=false"
                         }
                     }
                 }
