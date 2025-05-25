@@ -39,6 +39,18 @@ pipeline {
             }
         }
 
+        stage('Ensure Namespace') {
+            steps {
+                script {
+                    def ns = env.K8S_NAMESPACE
+                    bat """
+                    kubectl get namespace ${ns} || kubectl create namespace ${ns}
+                    """
+                }
+            }
+        }
+
+
         stage('Checkout') {
             steps {
                 git branch: "${env.BRANCH_NAME}", url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
