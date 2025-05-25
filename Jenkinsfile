@@ -71,7 +71,7 @@ pipeline {
 
         stage('Unit Tests') {
             parallel {
-                stage('Unit Tests - All Branches') {
+                stage('Unit Tests') {
                     when {
                         anyOf {
                             branch 'dev'
@@ -92,7 +92,7 @@ pipeline {
 
         stage('Integration Tests') {
             parallel {
-                stage('Integration Tests - Dev & Feature') {
+                stage('Integration Tests') {
                     when {
                         anyOf {
                             branch 'master'
@@ -106,7 +106,7 @@ pipeline {
                     steps {
                         script {
                             echo "🧪 Running Integration Tests for ${env.BRANCH_NAME}"
-                            bat "mvn failsafe:integration-test failsafe:verify -DfailIfNoTests=false -Dtest=*ControllerTest"
+                            bat "mvn failsafe:integration-test failsafe:verify -DfailIfNoTests=false -Dtest=*ControllerIntegrationTest"
                         }
                     }
                 }
