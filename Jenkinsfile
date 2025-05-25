@@ -181,19 +181,13 @@ pipeline {
                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
                 bat "kubectl wait --for=condition=ready pod -l app=zipkin -n ${K8S_NAMESPACE} --timeout=200s"
 
-                bat """
-                    set IMAGE_TAG=${IMAGE_TAG}
-                    set K8S_NAMESPACE=${K8S_NAMESPACE}
-                    bash -c "envsubst < k8s/service-discovery/deployment.yaml | kubectl apply -n %K8S_NAMESPACE% -f -"
-                """
+                bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
+                bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
                 bat "kubectl wait --for=condition=ready pod -l app=service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
 
-                bat """
-                    set IMAGE_TAG=${IMAGE_TAG}
-                    set K8S_NAMESPACE=${K8S_NAMESPACE}
-                    bash -c "envsubst < k8s/cloud-config/deployment.yaml | kubectl apply -n %K8S_NAMESPACE% -f -"
-                """
-                bat "kubectl wait --for=condition=ready pod -l app=cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
+                bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
+                bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                bat "kubectl wait --for=condition=ready pod -l app=cloud-config -n ${K8S_NAMESPACE}"
             }
         }
 
