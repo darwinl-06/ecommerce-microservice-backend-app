@@ -25,7 +25,7 @@ import java.util.Objects;
         properties = {"spring.profiles.active=test",
                 "spring.datasource.url=jdbc:h2:mem:testdb",
                 "spring.datasource.driver-class-name=org.h2.Driver"})
-public class ProductControllerIntegrationTest {
+public class ProductControllerTest {
 
     @LocalServerPort
     private int port;
