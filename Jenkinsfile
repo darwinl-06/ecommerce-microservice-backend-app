@@ -82,7 +82,7 @@ pipeline {
                     }
                     steps {
                         script {
-                            echo "🔍 Running Unit Tests for ${env.BRANCH_NAME}"
+                            echo "🔍 Running Unit Tests for ${env.BRANCH_NAME}
                             bat "mvn clean test -DfailIfNoTests=false"
                         }
                     }
@@ -113,10 +113,30 @@ pipeline {
             }
         }
 
+        stage('E2E Tests') {
+                    parallel {
+                        stage('E2E Tests') {
+                            when {
+                                anyOf {
+                                    branch 'master'
+                                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                                    allOf {
+                                        not { branch 'master' }
+                                        not { branch 'release' }
+                                    }
+                                }
+                            }
+                            steps {
+                                echo '👻👻👻👻👻👻'
+                            }
+                        }
+                    }
+                }
+
         stage('Build Services') {
             when {
                 anyOf {
-                    branch 'dev'
+                    branch 'master'
                     branch 'release'
                 }
             }
@@ -126,7 +146,7 @@ pipeline {
         }
 
         stage('Build Docker Images') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 script {
                     SERVICES.split().each { service ->
@@ -137,7 +157,7 @@ pipeline {
         }
 
         stage('Push Docker Images') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
@@ -151,14 +171,14 @@ pipeline {
         }
 
         stage('Deploy Common Config') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
             }
         }
 
         stage('Deploy Core Services') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
                 bat "kubectl wait --for=condition=ready pod -l app=zipkin -n ${K8S_NAMESPACE} --timeout=200s"
@@ -175,7 +195,7 @@ pipeline {
 
 
         stage('Deploy Microservices') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 script {
                     echo '👻👻👻👻👻👻'
@@ -195,8 +215,7 @@ pipeline {
             script {
                 echo "✅ Pipeline completed successfully for ${env.BRANCH_NAME} branch."
                 echo "📊 Environment: ${env.SPRING_PROFILE}"
-                echo "🏷️  Image Tag: ${env.IMAGE_TAG}"
-                
+
                 if (env.BRANCH_NAME == 'master') {
                     echo "🚀 Production deployment completed successfully!"
                 } else if (env.BRANCH_NAME == 'release') {
