@@ -66,8 +66,7 @@ pipeline {
                 bat 'docker --version'
                 bat 'kubectl config current-context'
 
-                }
-            }
+            }          
         }
 
         stage('Unit Tests') {
