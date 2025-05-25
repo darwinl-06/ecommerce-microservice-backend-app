@@ -110,15 +110,19 @@ pipeline {
             when { branch 'master' }
             steps {
                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
+                bat "kubectl set image deployment/zipkin zipkin=${DOCKERHUB_USER}/zipkin:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
                 bat "kubectl wait --for=condition=ready pod -l app=zipkin -n ${K8S_NAMESPACE} --timeout=200s"
 
                 bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
+                bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
                 bat "kubectl wait --for=condition=ready pod -l app=service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
 
                 bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
+                bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
                 bat "kubectl wait --for=condition=ready pod -l app=cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
             }
         }
+
 
         stage('Deploy Microservices') {
             when { branch 'master' }
