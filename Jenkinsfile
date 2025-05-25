@@ -60,17 +60,77 @@ pipeline {
         }
 
         stage('Verify Tools') {
-            when { branch 'master' }
             steps {
                 bat 'java -version'
-                bat 'docker --version'
                 bat 'mvn -version'
+                bat 'docker --version'
                 bat 'kubectl config current-context'
+
+                }
+            }
+        }
+
+        stage('Unit Tests') {
+            parallel {
+                stage('Unit Tests') {
+                    when {
+                        anyOf {
+                            branch 'develop'
+                            branch 'feature/*'
+                            branch 'master'
+                            branch 'release'
+                        }
+                    }
+                    steps {
+                        script {
+                            echo "🔍 Running Unit Tests for Development Environment"
+                            bat "mvn clean test -Dtest=**/*Test.java -DfailIfNoTests=false"
+                        }
+                    }
+                    post {
+                        always {
+                            publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Integration Tests') {
+            parallel {
+                stage('Integration Tests - Development') {
+                    when {
+                        anyOf {
+                            branch 'develop'
+                            branch 'feature/*'
+                            allOf {
+                                not { branch 'master' }
+                                not { branch 'release' }
+                            }
+                        }
+                    }
+                    steps {
+                        script {
+                            echo "🧪 Running Integration Tests for Development Environment"
+                            bat "mvn failsafe:integration-test -Dspring.profiles.active=test -Dtest=**/*IntegrationTest.java -DfailIfNoTests=false"
+                        }
+                    }
+                    post {
+                        always {
+                            publishTestResults testResultsPattern: '**/target/failsafe-reports/*.xml'
+                        }
+                    }
+                }
             }
         }
 
         stage('Build Services') {
-            when { branch 'master' }
+            when {
+                anyOf {
+                    branch 'master'
+                    branch 'release'
+                }
+            }
             steps {
                 bat "mvn clean package -DskipTests"
             }
@@ -136,11 +196,57 @@ pipeline {
     }
 
     post {
+        always {
+            script {
+                echo "📋 Collecting Test Reports and Artifacts"
+                
+                // Archivar reportes de pruebas si existen
+                if (fileExists('**/target/surefire-reports/*.xml')) {
+                    archiveArtifacts artifacts: '**/target/surefire-reports/*.xml', allowEmptyArchive: true
+                }
+                
+                if (fileExists('**/target/failsafe-reports/*.xml')) {
+                    archiveArtifacts artifacts: '**/target/failsafe-reports/*.xml', allowEmptyArchive: true
+                }
+                
+                // Archivar logs de construcción
+                if (fileExists('**/target/*.jar')) {
+                    archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
+                }
+            }
+        }
         success {
-            echo '✅ Pipeline completed successfully.'
+            script {
+                echo "✅ Pipeline completed successfully for ${env.BRANCH_NAME} branch."
+                echo "📊 Environment: ${env.SPRING_PROFILE}"
+                echo "🏷️  Image Tag: ${env.IMAGE_TAG}"
+                
+                if (env.BRANCH_NAME == 'master') {
+                    echo "🚀 Production deployment completed successfully!"
+                } else if (env.BRANCH_NAME == 'release') {
+                    echo "🎯 Staging deployment completed successfully!"
+                } else {
+                    echo "🔧 Development tests completed successfully!"
+                }
+            }
         }
         failure {
-            echo '❌ Pipeline failed.'
+            script {
+                echo "❌ Pipeline failed for ${env.BRANCH_NAME} branch."
+                echo "🔍 Check the logs for details."
+                echo "📧 Notify the development team about the failure."
+                
+                // Aquí puedes agregar notificaciones por email o Slack
+                // emailext subject: "Pipeline Failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
+                //          body: "The pipeline failed for branch ${env.BRANCH_NAME}. Please check the logs.",
+                //          to: "team@company.com"
+            }
+        }
+        unstable {
+            script {
+                echo "⚠️  Pipeline completed with warnings for ${env.BRANCH_NAME} branch."
+                echo "🔍 Some tests may have failed. Review test reports."
+            }
         }
     }
 }
