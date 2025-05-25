@@ -86,11 +86,6 @@ pipeline {
                             bat "mvn clean test -Dtest=**/*Test.java -DfailIfNoTests=false"
                         }
                     }
-                    post {
-                        always {
-                            publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
-                        }
-                    }
                 }
             }
         }
@@ -114,11 +109,6 @@ pipeline {
                             bat "mvn failsafe:integration-test -Dspring.profiles.active=test -Dtest=**/*IntegrationTest.java -DfailIfNoTests=false"
                         }
                     }
-                    post {
-                        always {
-                            publishTestResults testResultsPattern: '**/target/failsafe-reports/*.xml'
-                        }
-                    }
                 }
             }
         }
@@ -126,7 +116,7 @@ pipeline {
         stage('Build Services') {
             when {
                 anyOf {
-                    branch 'master'
+                    branch 'dev'
                     branch 'release'
                 }
             }
@@ -136,7 +126,7 @@ pipeline {
         }
 
         stage('Build Docker Images') {
-            when { branch 'master' }
+            when { branch 'dev' }
             steps {
                 script {
                     SERVICES.split().each { service ->
@@ -147,7 +137,7 @@ pipeline {
         }
 
         stage('Push Docker Images') {
-            when { branch 'master' }
+            when { branch 'dev' }
             steps {
                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
@@ -161,7 +151,7 @@ pipeline {
         }
 
         stage('Deploy Common Config') {
-            when { branch 'master' }
+            when { branch 'dev' }
             steps {
                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
             }
@@ -185,7 +175,7 @@ pipeline {
 
 
         stage('Deploy Microservices') {
-            when { branch 'master' }
+            when { branch 'dev' }
             steps {
                 script {
                     echo '👻👻👻👻👻👻'
@@ -198,20 +188,7 @@ pipeline {
         always {
             script {
                 echo "📋 Collecting Test Reports and Artifacts"
-                
-                // Archivar reportes de pruebas si existen
-                if (fileExists('**/target/surefire-reports/*.xml')) {
-                    archiveArtifacts artifacts: '**/target/surefire-reports/*.xml', allowEmptyArchive: true
-                }
-                
-                if (fileExists('**/target/failsafe-reports/*.xml')) {
-                    archiveArtifacts artifacts: '**/target/failsafe-reports/*.xml', allowEmptyArchive: true
-                }
-                
-                // Archivar logs de construcción
-                if (fileExists('**/target/*.jar')) {
-                    archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
-                }
+
             }
         }
         success {
