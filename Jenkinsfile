@@ -13,12 +13,35 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            when {
-                branch 'master'
-            }
+        stage('Init') {
             steps {
-                git branch: 'dev', url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
+                script {
+                    // Definir variables de entorno según la rama
+                    if (env.BRANCH_NAME == 'master') {
+                        env.K8S_NAMESPACE = 'ecommerce-prod'
+                        env.SPRING_PROFILE = 'prod'
+                        env.IMAGE_TAG = 'prod'
+                    } else if (env.BRANCH_NAME == 'release') {
+                        env.K8S_NAMESPACE = 'ecommerce-stage'
+                        env.SPRING_PROFILE = 'stage'
+                        env.IMAGE_TAG = 'stage'
+                    } else {
+                        env.K8S_NAMESPACE = 'ecommerce-dev'
+                        env.SPRING_PROFILE = 'dev'
+                        env.IMAGE_TAG = 'dev'
+                    }
+
+                    echo "Branch: ${env.BRANCH_NAME}"
+                    echo "Namespace: ${env.K8S_NAMESPACE}"
+                    echo "Spring profile: ${env.SPRING_PROFILE}"
+                    echo "Image tag: ${env.IMAGE_TAG}"
+                }
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                git branch: "${env.BRANCH_NAME}", url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
             }
         }
 
@@ -30,15 +53,16 @@ pipeline {
                 bat 'java -version'
                 bat 'docker --version'
                 bat 'mvn -version'
+                bat 'kubectl config current-context'
             }
         }
 
-        stage('Check Kube Context') {
+        stage('Build Services') {
             when {
                 branch 'master'
             }
             steps {
-                bat 'kubectl config current-context'
+                bat "mvn clean package -DskipTests"
             }
         }
 
@@ -48,9 +72,8 @@ pipeline {
             }
             steps {
                 script {
-                    bat "mvn clean package -DskipTests"
                     SERVICES.split().each { service ->
-                        bat "docker build -t %DOCKERHUB_USER%/${service}:latest .\\${service}"
+                        bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
                     }
                 }
             }
@@ -62,60 +85,63 @@ pipeline {
             }
             steps {
                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
-                    bat 'echo %DOCKERHUB_PASSWORD% | docker login -u %DOCKERHUB_USER% --password-stdin'
+                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
                     script {
                         SERVICES.split().each { service ->
-                            bat "docker push %DOCKERHUB_USER%/${service}:latest"
+                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
                         }
                     }
                 }
             }
         }
 
-        stage('Deploy common configuration') {
+        stage('Deploy Common Config') {
             when {
                 branch 'master'
             }
             steps {
-                bat """
-                echo Applying common configuration...
-                kubectl apply -f k8s\\common-config.yaml
-                """
+                bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
             }
         }
 
-        stage('Deploy core services to k8s in minikube') {
+        stage('Deploy Core Services') {
             when {
                 branch 'master'
             }
             steps {
-                bat 'kubectl apply -f k8s\\zipkin --namespace=ecommerce-app'
-                bat 'kubectl wait --for=condition=ready pod -l app=zipkin -n ecommerce-app --timeout=200s'
+                bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
+                bat "kubectl wait --for=condition=ready pod -l app=zipkin -n ${K8S_NAMESPACE} --timeout=200s"
 
-                bat 'kubectl apply -f k8s\\service-discovery --namespace=ecommerce-app'
-                bat 'kubectl wait --for=condition=ready pod -l app=service-discovery -n ecommerce-app --timeout=200s'
+                bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
+                bat "kubectl wait --for=condition=ready pod -l app=service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
 
-                bat 'kubectl apply -f k8s\\cloud-config --namespace=ecommerce-app'
-                bat 'kubectl wait --for=condition=ready pod -l app=cloud-config -n ecommerce-app --timeout=300s'
+                bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
+                bat "kubectl wait --for=condition=ready pod -l app=cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
             }
         }
 
-        stage('Deploy to Minikube') {
+        stage('Deploy Microservices') {
             when {
                 branch 'master'
             }
             steps {
-                echo 'Deployment logic to Minikube goes here...'
+                script {
+                    SERVICES.split().each { service ->
+                        bat "kubectl apply -f k8s\\${service} -n ${K8S_NAMESPACE}"
+                        bat "kubectl set image deployment/${service} ${service}=${DOCKERHUB_USER}/${service}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                        bat "kubectl set env deployment/${service} SPRING_PROFILES_ACTIVE=${SPRING_PROFILE} -n ${K8S_NAMESPACE}"
+                    }
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline completed successfully.'
+            echo '✅ Pipeline completed successfully.'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo '❌ Pipeline failed.'
         }
     }
 }
