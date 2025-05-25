@@ -46,9 +46,7 @@ pipeline {
             steps {
                 script {
                     def ns = env.K8S_NAMESPACE
-                    bat """
-                    kubectl get namespace ${ns} || kubectl create namespace ${ns}
-                    """
+                    bat "kubectl get namespace ${ns} || kubectl create namespace ${ns}"
                 }
             }
         }
@@ -82,7 +80,7 @@ pipeline {
                     }
                     steps {
                         script {
-                            echo "🔍 Running Unit Tests for ${env.BRANCH_NAME}
+                            echo "🔍 Running Unit Tests for ${env.BRANCH_NAME}"
                             bat "mvn clean test -DfailIfNoTests=false"
                         }
                     }
