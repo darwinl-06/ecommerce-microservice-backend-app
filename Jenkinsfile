@@ -123,7 +123,8 @@ pipeline {
         stage('Deploy Microservices') {
             when { branch 'master' }
             steps {
-                echo '👻👻👻👻👻👻'
+                script {
+                    echo '👻👻👻👻👻👻'
                 }
             }
         }
