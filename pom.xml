@@ -114,6 +114,7 @@
 		<module>order-service</module>
 		<module>shipping-service</module>
 		<module>payment-service</module>
+		<module>e2e-tests</module>
 	</modules>
 
 	<build>
@@ -151,6 +152,26 @@
 						<configuration>
 							<includes>
 								<include>**/*ControllerTest.java</include>
+							</includes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>3.1.2</version>
+				<executions>
+					<execution>
+						<id>E2E Test</id>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+						<configuration>
+							<includes>
+								<include>**/*E2ETest.java</include>
 							</includes>
 						</configuration>
 					</execution>
