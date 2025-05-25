@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: service-discovery
-        image: darwinl06/service-discovery:latest
+        image: darwinl06/service-discovery:${IMAGE_TAG}
         ports:
         - containerPort: 8761
 #        resources:
