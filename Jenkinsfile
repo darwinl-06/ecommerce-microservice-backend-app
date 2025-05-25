@@ -10,7 +10,7 @@ pipeline {
         DOCKERHUB_USER = 'darwinl06'
         DOCKER_CREDENTIALS_ID = 'huevos'
         SERVICES = 'api-gateway cloud-config favourite-service order-service payment-service product-service proxy-client service-discovery shipping-service user-service'
-        K8S_NAMESPACE = 'ecommerce'  // Usamos un único namespace para todos los entornos
+        K8S_NAMESPACE = 'ecommerce'
     }
 
     stages {
@@ -20,15 +20,15 @@ pipeline {
                     if (env.BRANCH_NAME == 'master') {
                         env.SPRING_PROFILE = 'prod'
                         env.IMAGE_TAG = 'prod'
-                        env.DEPLOYMENT_SUFFIX = ''         // Producción sin sufijo
+                        env.DEPLOYMENT_SUFFIX = '-prod'
                     } else if (env.BRANCH_NAME == 'release') {
                         env.SPRING_PROFILE = 'stage'
                         env.IMAGE_TAG = 'stage'
-                        env.DEPLOYMENT_SUFFIX = '-stage'   // Stage con sufijo para deployments separados
+                        env.DEPLOYMENT_SUFFIX = '-stage'
                     } else {
                         env.SPRING_PROFILE = 'dev'
                         env.IMAGE_TAG = 'dev'
-                        env.DEPLOYMENT_SUFFIX = '-dev'     // Dev con sufijo
+                        env.DEPLOYMENT_SUFFIX = '-dev'
                     }
 
                     echo "Branch: ${env.BRANCH_NAME}"
@@ -123,18 +123,7 @@ pipeline {
         stage('Deploy Microservices') {
             when { branch 'master' }
             steps {
-                script {
-                    SERVICES.split().each { service ->
-                        // Aquí usamos deploymentName con sufijo para ambientes distintos
-                        def deploymentName = service + env.DEPLOYMENT_SUFFIX
 
-                        // Aplica manifiestos (asegúrate que usen deploymentName si es necesario)
-                        bat "kubectl apply -f k8s\\${service} -n ${K8S_NAMESPACE}"
-
-                        // Cambia imagen y perfil en el deployment correspondiente
-                        bat "kubectl set image deployment/${deploymentName} ${service}=${DOCKERHUB_USER}/${service}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                        bat "kubectl set env deployment/${deploymentName} SPRING_PROFILES_ACTIVE=${SPRING_PROFILE} -n ${K8S_NAMESPACE}"
-                    }
                 }
             }
         }
