@@ -10,31 +10,32 @@ pipeline {
         DOCKERHUB_USER = 'darwinl06'
         DOCKER_CREDENTIALS_ID = 'huevos'
         SERVICES = 'api-gateway cloud-config favourite-service order-service payment-service product-service proxy-client service-discovery shipping-service user-service'
+        K8S_NAMESPACE = 'ecommerce'  // Usamos un único namespace para todos los entornos
     }
 
     stages {
         stage('Init') {
             steps {
                 script {
-                    // Definir variables de entorno según la rama
                     if (env.BRANCH_NAME == 'master') {
-                        env.K8S_NAMESPACE = 'ecommerce-prod'
                         env.SPRING_PROFILE = 'prod'
                         env.IMAGE_TAG = 'prod'
+                        env.DEPLOYMENT_SUFFIX = ''         // Producción sin sufijo
                     } else if (env.BRANCH_NAME == 'release') {
-                        env.K8S_NAMESPACE = 'ecommerce-stage'
                         env.SPRING_PROFILE = 'stage'
                         env.IMAGE_TAG = 'stage'
+                        env.DEPLOYMENT_SUFFIX = '-stage'   // Stage con sufijo para deployments separados
                     } else {
-                        env.K8S_NAMESPACE = 'ecommerce-dev'
                         env.SPRING_PROFILE = 'dev'
                         env.IMAGE_TAG = 'dev'
+                        env.DEPLOYMENT_SUFFIX = '-dev'     // Dev con sufijo
                     }
 
                     echo "Branch: ${env.BRANCH_NAME}"
                     echo "Namespace: ${env.K8S_NAMESPACE}"
                     echo "Spring profile: ${env.SPRING_PROFILE}"
                     echo "Image tag: ${env.IMAGE_TAG}"
+                    echo "Deployment suffix: ${env.DEPLOYMENT_SUFFIX}"
                 }
             }
         }
@@ -50,7 +51,6 @@ pipeline {
             }
         }
 
-
         stage('Checkout') {
             steps {
                 git branch: "${env.BRANCH_NAME}", url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
@@ -58,9 +58,7 @@ pipeline {
         }
 
         stage('Verify Tools') {
-            when {
-                branch 'master'
-            }
+            when { branch 'master' }
             steps {
                 bat 'java -version'
                 bat 'docker --version'
@@ -70,18 +68,14 @@ pipeline {
         }
 
         stage('Build Services') {
-            when {
-                branch 'master'
-            }
+            when { branch 'master' }
             steps {
                 bat "mvn clean package -DskipTests"
             }
         }
 
         stage('Build Docker Images') {
-            when {
-                branch 'master'
-            }
+            when { branch 'master' }
             steps {
                 script {
                     SERVICES.split().each { service ->
@@ -92,9 +86,7 @@ pipeline {
         }
 
         stage('Push Docker Images') {
-            when {
-                branch 'master'
-            }
+            when { branch 'master' }
             steps {
                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
@@ -108,18 +100,14 @@ pipeline {
         }
 
         stage('Deploy Common Config') {
-            when {
-                branch 'master'
-            }
+            when { branch 'master' }
             steps {
                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
             }
         }
 
         stage('Deploy Core Services') {
-            when {
-                branch 'master'
-            }
+            when { branch 'master' }
             steps {
                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
                 bat "kubectl wait --for=condition=ready pod -l app=zipkin -n ${K8S_NAMESPACE} --timeout=200s"
@@ -133,15 +121,19 @@ pipeline {
         }
 
         stage('Deploy Microservices') {
-            when {
-                branch 'master'
-            }
+            when { branch 'master' }
             steps {
                 script {
                     SERVICES.split().each { service ->
+                        // Aquí usamos deploymentName con sufijo para ambientes distintos
+                        def deploymentName = service + env.DEPLOYMENT_SUFFIX
+
+                        // Aplica manifiestos (asegúrate que usen deploymentName si es necesario)
                         bat "kubectl apply -f k8s\\${service} -n ${K8S_NAMESPACE}"
-                        bat "kubectl set image deployment/${service} ${service}=${DOCKERHUB_USER}/${service}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                        bat "kubectl set env deployment/${service} SPRING_PROFILES_ACTIVE=${SPRING_PROFILE} -n ${K8S_NAMESPACE}"
+
+                        // Cambia imagen y perfil en el deployment correspondiente
+                        bat "kubectl set image deployment/${deploymentName} ${service}=${DOCKERHUB_USER}/${service}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                        bat "kubectl set env deployment/${deploymentName} SPRING_PROFILES_ACTIVE=${SPRING_PROFILE} -n ${K8S_NAMESPACE}"
                     }
                 }
             }
