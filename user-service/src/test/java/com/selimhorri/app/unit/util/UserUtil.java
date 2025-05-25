@@ -31,7 +31,7 @@ public class UserUtil {
 
     public static UserDto getSampleUserDtoWithAddresses() {
         return UserDto.builder()
-                .userId(1)
+                .userId(100)
                 .firstName("John")
                 .lastName("Doe")
                 .imageUrl("https://example.com/image.jpg")
