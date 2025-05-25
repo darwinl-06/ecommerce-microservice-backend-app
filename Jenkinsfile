@@ -21,10 +21,12 @@ pipeline {
                         env.SPRING_PROFILE = 'prod'
                         env.IMAGE_TAG = 'prod'
                         env.DEPLOYMENT_SUFFIX = '-prod'
+
                     } else if (env.BRANCH_NAME == 'release') {
                         env.SPRING_PROFILE = 'stage'
                         env.IMAGE_TAG = 'stage'
                         env.DEPLOYMENT_SUFFIX = '-stage'
+
                     } else {
                         env.SPRING_PROFILE = 'dev'
                         env.IMAGE_TAG = 'dev'
@@ -110,7 +112,6 @@ pipeline {
             when { branch 'master' }
             steps {
                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
-                bat "kubectl set image deployment/zipkin zipkin=${DOCKERHUB_USER}/zipkin:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
                 bat "kubectl wait --for=condition=ready pod -l app=zipkin -n ${K8S_NAMESPACE} --timeout=200s"
 
                 bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
