@@ -71,19 +71,19 @@ pipeline {
 
         stage('Unit Tests') {
             parallel {
-                stage('Unit Tests') {
+                stage('Unit Tests - All Branches') {
                     when {
                         anyOf {
-                            branch 'develop'
-                            branch 'feature/*'
+                            branch 'dev'
                             branch 'master'
                             branch 'release'
+                            expression { env.BRANCH_NAME.startsWith('feature/') }
                         }
                     }
                     steps {
                         script {
-                            echo "🔍 Running Unit Tests for Development Environment"
-                            bat "mvn clean test -Dtest=**/*Test.java -DfailIfNoTests=false"
+                            echo "🔍 Running Unit Tests for ${env.BRANCH_NAME}"
+                            bat "mvn clean test -DfailIfNoTests=false"
                         }
                     }
                 }
@@ -92,11 +92,11 @@ pipeline {
 
         stage('Integration Tests') {
             parallel {
-                stage('Integration Tests - Development') {
+                stage('Integration Tests - Dev & Feature') {
                     when {
                         anyOf {
-                            branch 'develop'
-                            branch 'feature/*'
+                            branch 'master'
+                            expression { env.BRANCH_NAME.startsWith('feature/') }
                             allOf {
                                 not { branch 'master' }
                                 not { branch 'release' }
@@ -105,8 +105,8 @@ pipeline {
                     }
                     steps {
                         script {
-                            echo "🧪 Running Integration Tests for Development Environment"
-                            bat "mvn failsafe:integration-test -Dspring.profiles.active=test -Dtest=**/*IntegrationTest.java -DfailIfNoTests=false"
+                            echo "🧪 Running Integration Tests for ${env.BRANCH_NAME}"
+                            bat "mvn failsafe:integration-test failsafe:verify -DfailIfNoTests=false -Dtest=*ControllerTest"
                         }
                     }
                 }
@@ -158,7 +158,7 @@ pipeline {
         }
 
         stage('Deploy Core Services') {
-            when { branch 'master' }
+            when { branch 'dev' }
             steps {
                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
                 bat "kubectl wait --for=condition=ready pod -l app=zipkin -n ${K8S_NAMESPACE} --timeout=200s"
@@ -211,11 +211,7 @@ pipeline {
                 echo "❌ Pipeline failed for ${env.BRANCH_NAME} branch."
                 echo "🔍 Check the logs for details."
                 echo "📧 Notify the development team about the failure."
-                
-                // Aquí puedes agregar notificaciones por email o Slack
-                // emailext subject: "Pipeline Failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
-                //          body: "The pipeline failed for branch ${env.BRANCH_NAME}. Please check the logs.",
-                //          to: "team@company.com"
+
             }
         }
         unstable {
