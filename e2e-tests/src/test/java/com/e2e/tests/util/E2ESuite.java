@@ -53,7 +53,7 @@ public class E2ESuite {
                     .withNetwork(network)
                     .withNetworkAliases("service-discovery-container")
                     .withExposedPorts(8761)
-                    //.withEnv("SPRING_PROFILES_ACTIVE", "dev")
+                    .withEnv("SPRING_PROFILES_ACTIVE", "dev")
                     .withEnv("SPRING_ZIPKIN_BASE_URL", "http://zipkin-container:9411")
                     .waitingFor(Wait.forHttp("/actuator/health").forStatusCode(200));
 
@@ -61,7 +61,7 @@ public class E2ESuite {
                     .withNetwork(network)
                     .withNetworkAliases("cloud-config-container")
                     .withExposedPorts(9296)
-                    //.withEnv("SPRING_PROFILES_ACTIVE", "dev")
+                    .withEnv("SPRING_PROFILES_ACTIVE", "dev")
                     .withEnv("SPRING_ZIPKIN_BASE_URL", "http://zipkin-container:9411")
                     .withEnv("EUREKA_CLIENT_SERVICEURL_DEFAULTZONE", "http://service-discovery-container:8761/eureka/")
                     .withEnv("EUREKA_INSTANCE", "cloud-config-container")
@@ -71,7 +71,7 @@ public class E2ESuite {
                     .withNetwork(network)
                     .withNetworkAliases("user-service-container")
                     .withExposedPorts(8700)
-                    //.withEnv("SPRING_PROFILES_ACTIVE", "dev")
+                    .withEnv("SPRING_PROFILES_ACTIVE", "dev")
                     .withEnv("SPRING_ZIPKIN_BASE_URL", "http://zipkin-container:9411")
                     .withEnv("SPRING_CONFIG_IMPORT", "optional:configserver:http://cloud-config-container:9296")
                     .withEnv("EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE", "http://service-discovery-container:8761/eureka")
@@ -79,11 +79,11 @@ public class E2ESuite {
                     .waitingFor(Wait.forHttp("/user-service/actuator/health").forStatusCode(200))
                     .withStartupTimeout(Duration.ofMinutes(3));
 
-            productServiceContainer = new GenericContainer<>("darwinl06/product-service:lastest")
+            productServiceContainer = new GenericContainer<>("darwinl06/product-service:latest")
                     .withNetwork(network)
                     .withNetworkAliases("product-service-container")
                     .withExposedPorts(8500)
-                    //.withEnv("SPRING_PROFILES_ACTIVE", "dev")
+                    .withEnv("SPRING_PROFILES_ACTIVE", "dev")
                     .withEnv("SPRING_ZIPKIN_BASE_URL", "http://zipkin-container:9411")
                     .withEnv("SPRING_CONFIG_IMPORT", "optional:configserver:http://cloud-config-container:9296")
                     .withEnv("EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE", "http://service-discovery-container:8761/eureka")
@@ -91,7 +91,7 @@ public class E2ESuite {
                     .waitingFor(Wait.forHttp("/product-service/actuator/health").forStatusCode(200))
                             .withStartupTimeout(Duration.ofMinutes(3));
 
-            orderServiceContainer = new GenericContainer<>("darwinl06/order-service:lastest")
+            orderServiceContainer = new GenericContainer<>("darwinl06/order-service:latest")
                     .withNetwork(network)
                     .withNetworkAliases("order-service-container")
                     .withExposedPorts(8300)
