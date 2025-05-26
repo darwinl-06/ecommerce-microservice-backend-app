@@ -157,14 +157,15 @@ pipeline {
             when { branch 'master' }
             steps {
                 script {
-                    SERVICES.split().each { svc ->
-                        if (!['zipkin', 'service-discovery', 'cloud-config'].contains(svc)) {
-                            bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-                            bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                            bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                            bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-                        }
-                    }
+                       echo "👻👻👻👻👻"
+//                     SERVICES.split().each { svc ->
+//                         if (!['zipkin', 'service-discovery', 'cloud-config'].contains(svc)) {
+//                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+//                         }
+//                     }
                 }
             }
         }
