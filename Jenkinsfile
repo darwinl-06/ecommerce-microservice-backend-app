@@ -81,7 +81,9 @@ pipeline {
                     steps {
                         script {
                             echo "🔍 Running Unit Tests for ${env.BRANCH_NAME}"
-                            bat "mvn clean test -DfailIfNoTests=false"
+                            bat "mvn test -pl user-service"
+                            bat "mvn test -pl product-service"
+                            bat "mvn test -pl payment-service"
                         }
                     }
                 }
@@ -104,7 +106,8 @@ pipeline {
                     steps {
                         script {
                             echo "🧪 Running Integration Tests for ${env.BRANCH_NAME}"
-                            bat "mvn clean verify -Dit.test=*ControllerTest.java -DfailIfNoTests=false -Dfailsafe.failIfNoSpecifiedTests=false"
+                            bat "mvn verify -pl user-service"
+                            bat "mvn verify -pl product-service"
                         }
                     }
                 }
