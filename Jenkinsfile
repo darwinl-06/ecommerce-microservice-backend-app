@@ -28,12 +28,11 @@ pipeline {
                     env.IMAGE_TAG = config[0]
                     env.DEPLOYMENT_SUFFIX = config[1]
 
-                    echo """
-                    📦 Branch: ${env.BRANCH_NAME}
-                    🌱 Spring profile: ${env.SPRING_PROFILES_ACTIVE}
-                    🏷️ Image tag: ${env.IMAGE_TAG}
-                    📂 Deployment suffix: ${env.DEPLOYMENT_SUFFIX}
-                    """
+                    echo "📦 Branch: ${env.BRANCH_NAME}"
+                    echo "🌱 Spring profile: ${env.SPRING_PROFILES_ACTIVE}"
+                    echo "🏷️ Image tag: ${env.IMAGE_TAG}"
+                    echo "📂 Deployment suffix: ${env.DEPLOYMENT_SUFFIX}"
+
                 }
             }
         }
