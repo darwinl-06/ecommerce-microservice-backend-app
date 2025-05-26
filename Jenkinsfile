@@ -73,7 +73,7 @@ pipeline {
                     when {
                         anyOf {
                             branch 'dev'
-                            branch 'dev'
+                            branch 'master'
                             branch 'release'
                             expression { env.BRANCH_NAME.startsWith('feature/') }
                         }
@@ -93,7 +93,7 @@ pipeline {
                 stage('Integration Tests') {
                     when {
                         anyOf {
-                            branch 'dev'
+                            branch 'master'
                             expression { env.BRANCH_NAME.startsWith('feature/') }
                             allOf {
                                 not { branch 'master' }
@@ -137,7 +137,7 @@ pipeline {
         stage('Build Services') {
             when {
                 anyOf {
-                    branch 'dev'
+                    branch 'master'
                     branch 'release'
                 }
             }
@@ -147,7 +147,7 @@ pipeline {
         }
 
         stage('Build Docker Images') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 script {
                     SERVICES.split().each { service ->
@@ -158,7 +158,7 @@ pipeline {
         }
 
         stage('Push Docker Images') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
@@ -172,14 +172,14 @@ pipeline {
         }
 
         stage('Deploy Common Config') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
             }
         }
 
         stage('Deploy Core Services') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
                 bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=200s"
@@ -195,7 +195,7 @@ pipeline {
         }
 
         stage('Deploy Microservices') {
-            when { branch 'dev' }
+            when { branch 'master' }
             steps {
                 script {
                     echo '👻👻👻👻👻👻'
@@ -229,7 +229,7 @@ pipeline {
         }
         unstable {
             script {
-                echo "⚠️  Pipeline completed with warnings for ${env.BRANCH_NAME} branch."
+                echo "⚠️ Pipeline completed with warnings for ${env.BRANCH_NAME} branch."
                 echo "🔍 Some tests may have failed. Review test reports."
             }
         }
