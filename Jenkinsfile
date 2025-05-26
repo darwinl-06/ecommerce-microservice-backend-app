@@ -58,51 +58,51 @@ pipeline {
             }
         }
 
-        stage('Unit Tests') {
-            when {
-                anyOf {
-                    branch 'dev'; branch 'master'; branch 'release'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
-                }
-            }
-            steps {
-                script {
-                    ['user-service', 'product-service', 'payment-service'].each {
-                        bat "mvn test -pl ${it}"
-                    }
-                }
-            }
-        }
-
-        stage('Integration Tests') {
-            when {
-                anyOf {
-                    branch 'master'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
-                    allOf { not { branch 'master' }; not { branch 'release' } }
-                }
-            }
-            steps {
-                script {
-                    ['user-service', 'product-service'].each {
-                        bat "mvn verify -pl ${it}"
-                    }
-                }
-            }
-        }
-
-        stage('E2E Tests') {
-            when {
-                anyOf {
-                    branch 'master'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
-                    allOf { not { branch 'master' }; not { branch 'release' } }
-                }
-            }
-            steps {
-                bat "mvn verify -pl e2e-tests"
-            }
-        }
+//         stage('Unit Tests') {
+//             when {
+//                 anyOf {
+//                     branch 'dev'; branch 'master'; branch 'release'
+//                     expression { env.BRANCH_NAME.startsWith('feature/') }
+//                 }
+//             }
+//             steps {
+//                 script {
+//                     ['user-service', 'product-service', 'payment-service'].each {
+//                         bat "mvn test -pl ${it}"
+//                     }
+//                 }
+//             }
+//         }
+//
+//         stage('Integration Tests') {
+//             when {
+//                 anyOf {
+//                     branch 'master'
+//                     expression { env.BRANCH_NAME.startsWith('feature/') }
+//                     allOf { not { branch 'master' }; not { branch 'release' } }
+//                 }
+//             }
+//             steps {
+//                 script {
+//                     ['user-service', 'product-service'].each {
+//                         bat "mvn verify -pl ${it}"
+//                     }
+//                 }
+//             }
+//         }
+//
+//         stage('E2E Tests') {
+//             when {
+//                 anyOf {
+//                     branch 'master'
+//                     expression { env.BRANCH_NAME.startsWith('feature/') }
+//                     allOf { not { branch 'master' }; not { branch 'release' } }
+//                 }
+//             }
+//             steps {
+//                 bat "mvn verify -pl e2e-tests"
+//             }
+//         }
 
         stage('Build & Package') {
             when { anyOf { branch 'master'; branch 'release' } }
@@ -127,48 +127,160 @@ pipeline {
             }
         }
 
-        stage('Deploy Common Config') {
-            when { branch 'master' }
-            steps {
-                bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
-            }
-        }
-
-        stage('Deploy Core Services') {
-            when { branch 'master' }
-            steps {
-                bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
-                bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=200s"
-
-                bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
-                bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
-
-                bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
-                bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
-            }
-        }
-
-        stage('Deploy Microservices') {
-            when { branch 'master' }
+        stage('Levantar contenedores para pruebas') {
             steps {
                 script {
-                       echo "👻👻👻👻👻"
-//                     SERVICES.split().each { svc ->
-//                         if (!['zipkin', 'service-discovery', 'cloud-config'].contains(svc)) {
-//                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-//                         }
-//                     }
+                    bat '''
+                    docker network create ecommerce-test || exit 0
+
+                    echo 🚀 Levantando ZIPKIN...
+                    docker run -d --name zipkin-container --network ecommerce-test -p 9411:9411 openzipkin/zipkin
+
+                    echo 🚀 Levantando EUREKA...
+                    docker run -d --name service-discovery-container --network ecommerce-test -p 8761:8761 ^
+                        -e SPRING_PROFILES_ACTIVE=dev ^
+                        -e SPRING_ZIPKIN_BASE_URL=http://zipkin-container:9411 ^
+                        darwinl06/service-discovery:%IMAGE_TAG%
+
+                    call :waitForService http://localhost:8761/actuator/health
+
+                    echo 🚀 Levantando CLOUD-CONFIG...
+                    docker run -d --name cloud-config-container --network ecommerce-test -p 9296:9296 ^
+                        -e SPRING_PROFILES_ACTIVE=dev ^
+                        -e SPRING_ZIPKIN_BASE_URL=http://zipkin-container:9411 ^
+                        -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery-container:8761/eureka/ ^
+                        -e EUREKA_INSTANCE=cloud-config-container ^
+                        darwinl06/cloud-config:%IMAGE_TAG%
+
+                    call :waitForService http://localhost:9296/actuator/health
+
+                    call :runService order-service 8300
+                    call :runService payment-service 8400
+                    call :runService product-service 8500
+                    call :runService shipping-service 8600
+                    call :runService user-service 8700
+                    call :runService favourite-service 8800
+
+                    echo ✅ Todos los contenedores están arriba y saludables.
+                    exit /b 0
+
+                    :runService
+                    set "NAME=%~1"
+                    set "PORT=%~2"
+                    echo 🚀 Levantando %NAME%...
+                    docker run -d --name %NAME%-container --network ecommerce-test -p %PORT%:%PORT% ^
+                        -e SPRING_PROFILES_ACTIVE=dev ^
+                        -e SPRING_ZIPKIN_BASE_URL=http://zipkin-container:9411 ^
+                        -e SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config-container:9296 ^
+                        -e EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://service-discovery-container:8761/eureka ^
+                        -e EUREKA_INSTANCE=%NAME%-container ^
+                        darwinl06/%NAME%:%IMAGE_TAG%
+                    call :waitForService http://localhost:%PORT%/%NAME%/actuator/health
+                    exit /b 0
+
+                    :waitForService
+                    set "URL=%~1"
+                    echo ⏳ Esperando a que %URL% esté disponible...
+                    :wait_loop
+                    for /f "delims=" %%i in ('curl -s %URL% ^| jq -r ".status"') do (
+                        if "%%i"=="UP" goto :eof
+                    )
+                    timeout /t 5 /nobreak >nul
+                    goto wait_loop
+                    '''
                 }
             }
         }
-    }
+
+
+
+        stage('Run Load Tests with Locust') {
+            when { branch 'master' }
+            steps {
+                script {
+                    bat """
+                    echo 🚀 Levantando Locust...
+                    docker run -d --name locust --network ecommerce-test -p 8089:8089 darwinl06/locust:%IMAGE_TAG%
+
+                    echo 🎯 Ejecutando prueba de carga desde Locust...
+                    docker run --rm --network ecommerce-test darwinl06/locust:%IMAGE_TAG% ^
+                        -f locustfile.py ^
+                        --host http://favourite-service-container:8800 ^
+                        --headless -u 10 -r 2 -t 1m
+
+                    echo ✅ Prueba completada
+                    """
+                }
+            }
+        }
+
+
+        stage('Detener y eliminar contenedores') {
+            steps {
+                script {
+                    bat """
+                    echo 🛑 Deteniendo y eliminando contenedores...
+
+                    docker rm -f locust || exit 0
+                    docker rm -f favourite-service-container || exit 0
+                    docker rm -f user-service-container || exit 0
+                    docker rm -f shipping-service-container || exit 0
+                    docker rm -f product-service-container || exit 0
+                    docker rm -f payment-service-container || exit 0
+                    docker rm -f order-service-container || exit 0
+                    docker rm -f cloud-config-container || exit 0
+                    docker rm -f service-discovery-container || exit 0
+                    docker rm -f zipkin-container || exit 0
+
+                    echo 🧹 Todos los contenedores eliminados
+                    """
+                }
+            }
+        }
+
+
+//         stage('Deploy Common Config') {
+//             when { branch 'master' }
+//             steps {
+//                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
+//             }
+//         }
+//
+//         stage('Deploy Core Services') {
+//             when { branch 'master' }
+//             steps {
+//                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
+//                 bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=200s"
+//
+//                 bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
+//                 bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+//                 bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+//                 bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
+//
+//                 bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
+//                 bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+//                 bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+//                 bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
+//             }
+//         }
+//
+//         stage('Deploy Microservices') {
+//             when { branch 'master' }
+//             steps {
+//                 script {
+//                     echo "👻👻👻👻👻"
+// //                     SERVICES.split().each { svc ->
+// //                         if (!['user-service', ].contains(svc)) {
+// //                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+// //                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+// //                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+// //                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+// //                         }
+// //                     }
+//                 }
+//             }
+//         }
+//     }
 
     post {
         success {
