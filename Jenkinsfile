@@ -14,40 +14,33 @@ pipeline {
     }
 
     stages {
+
         stage('Init') {
             steps {
                 script {
-                    if (env.BRANCH_NAME == 'master') {
-                        env.SPRING_PROFILE = 'prod'
-                        env.IMAGE_TAG = 'prod'
-                        env.DEPLOYMENT_SUFFIX = '-prod'
+                    def profileConfig = [
+                        master : ['prod', '-prod'],
+                        release: ['stage', '-stage']
+                    ]
+                    def config = profileConfig.get(env.BRANCH_NAME, ['dev', '-dev'])
 
-                    } else if (env.BRANCH_NAME == 'release') {
-                        env.SPRING_PROFILE = 'stage'
-                        env.IMAGE_TAG = 'stage'
-                        env.DEPLOYMENT_SUFFIX = '-stage'
+                    env.SPRING_PROFILES_ACTIVE = config[0]
+                    env.IMAGE_TAG = config[0]
+                    env.DEPLOYMENT_SUFFIX = config[1]
 
-                    } else {
-                        env.SPRING_PROFILE = 'dev'
-                        env.IMAGE_TAG = 'dev'
-                        env.DEPLOYMENT_SUFFIX = '-dev'
-                    }
-
-                    echo "Branch: ${env.BRANCH_NAME}"
-                    echo "Namespace: ${env.K8S_NAMESPACE}"
-                    echo "Spring profile: ${env.SPRING_PROFILE}"
-                    echo "Image tag: ${env.IMAGE_TAG}"
-                    echo "Deployment suffix: ${env.DEPLOYMENT_SUFFIX}"
+                    echo """
+                    📦 Branch: ${env.BRANCH_NAME}
+                    🌱 Spring profile: ${env.SPRING_PROFILES_ACTIVE}
+                    🏷️ Image tag: ${env.IMAGE_TAG}
+                    📂 Deployment suffix: ${env.DEPLOYMENT_SUFFIX}
+                    """
                 }
             }
         }
 
         stage('Ensure Namespace') {
             steps {
-                script {
-                    def ns = env.K8S_NAMESPACE
-                    bat "kubectl get namespace ${ns} || kubectl create namespace ${ns}"
-                }
+                bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
             }
         }
 
@@ -63,110 +56,71 @@ pipeline {
                 bat 'mvn -version'
                 bat 'docker --version'
                 bat 'kubectl config current-context'
-
-            }          
+            }
         }
 
         stage('Unit Tests') {
-            parallel {
-                stage('Unit Tests') {
-                    when {
-                        anyOf {
-                            branch 'dev'
-                            branch 'master'
-                            branch 'release'
-                            expression { env.BRANCH_NAME.startsWith('feature/') }
-                        }
-                    }
-                    steps {
-                        script {
-                            echo "🔍 Running Unit Tests for ${env.BRANCH_NAME}"
-                            bat "mvn test -pl user-service"
-                            bat "mvn test -pl product-service"
-                            bat "mvn test -pl payment-service"
-                        }
+            when {
+                anyOf {
+                    branch 'dev'; branch 'master'; branch 'release'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
+            steps {
+                script {
+                    ['user-service', 'product-service', 'payment-service'].each {
+                        bat "mvn test -pl ${it}"
                     }
                 }
             }
         }
 
         stage('Integration Tests') {
-            parallel {
-                stage('Integration Tests') {
-                    when {
-                        anyOf {
-                            branch 'master'
-                            expression { env.BRANCH_NAME.startsWith('feature/') }
-                            allOf {
-                                not { branch 'master' }
-                                not { branch 'release' }
-                            }
-                        }
-                    }
-                    steps {
-                        script {
-                            echo "🧪 Running Integration Tests for ${env.BRANCH_NAME}"
-                            bat "mvn verify -pl user-service"
-                            bat "mvn verify -pl product-service"
-                        }
+            when {
+                anyOf {
+                    branch 'master'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                    allOf { not { branch 'master' }; not { branch 'release' } }
+                }
+            }
+            steps {
+                script {
+                    ['user-service', 'product-service'].each {
+                        bat "mvn verify -pl ${it}"
                     }
                 }
             }
         }
 
         stage('E2E Tests') {
-                    parallel {
-                        stage('E2E Tests') {
-                            when {
-                                anyOf {
-                                    branch 'master'
-                                    expression { env.BRANCH_NAME.startsWith('feature/') }
-                                    allOf {
-                                        not { branch 'master' }
-                                        not { branch 'release' }
-                                    }
-                                }
-                            }
-                            steps {
-                                script {
-                                    echo "🧪 Running Integration Tests for ${env.BRANCH_NAME}"
-                                    bat "mvn verify -pl e2e-tests"
-                                }
-                            }
-                        }
-                    }
-                }
-
-        stage('Build Services') {
             when {
                 anyOf {
                     branch 'master'
-                    branch 'release'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                    allOf { not { branch 'master' }; not { branch 'release' } }
                 }
             }
+            steps {
+                bat "mvn verify -pl e2e-tests"
+            }
+        }
+
+        stage('Build & Package') {
+            when { anyOf { branch 'master'; branch 'release' } }
             steps {
                 bat "mvn clean package -DskipTests"
             }
         }
 
-        stage('Build Docker Images') {
-            when { branch 'master' }
-            steps {
-                script {
-                    SERVICES.split().each { service ->
-                        bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
-                    }
-                }
-            }
-        }
-
-        stage('Push Docker Images') {
+        stage('Build & Push Docker Images') {
             when { branch 'master' }
             steps {
                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+
                     script {
                         SERVICES.split().each { service ->
+                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
                             bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
                         }
                     }
@@ -189,10 +143,12 @@ pipeline {
 
                 bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
                 bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
                 bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
 
                 bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
                 bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
                 bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
             }
         }
@@ -201,7 +157,14 @@ pipeline {
             when { branch 'master' }
             steps {
                 script {
-                    echo '👻👻👻👻👻👻'
+                    SERVICES.split().each { svc ->
+                        if (!['zipkin', 'service-discovery', 'cloud-config'].contains(svc)) {
+                            bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+                            bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+                        }
+                    }
                 }
             }
         }
@@ -209,32 +172,13 @@ pipeline {
 
     post {
         success {
-            script {
-                echo "✅ Pipeline completed successfully for ${env.BRANCH_NAME} branch."
-                echo "📊 Environment: ${env.SPRING_PROFILE}"
-
-                if (env.BRANCH_NAME == 'master') {
-                    echo "🚀 Production deployment completed successfully!"
-                } else if (env.BRANCH_NAME == 'release') {
-                    echo "🎯 Staging deployment completed successfully!"
-                } else {
-                    echo "🔧 Development tests completed successfully!"
-                }
-            }
+            echo "✅ Pipeline OK (${env.BRANCH_NAME}) - ${SPRING_PROFILES_ACTIVE}"
         }
         failure {
-            script {
-                echo "❌ Pipeline failed for ${env.BRANCH_NAME} branch."
-                echo "🔍 Check the logs for details."
-                echo "📧 Notify the development team about the failure."
-
-            }
+            echo "❌ Falló pipeline en ${env.BRANCH_NAME}. Ver logs."
         }
         unstable {
-            script {
-                echo "⚠️ Pipeline completed with warnings for ${env.BRANCH_NAME} branch."
-                echo "🔍 Some tests may have failed. Review test reports."
-            }
+            echo "⚠️ Finalizó con advertencias en ${env.BRANCH_NAME}"
         }
     }
 }
