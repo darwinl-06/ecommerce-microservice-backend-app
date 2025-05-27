@@ -198,21 +198,79 @@ pipeline {
             when { branch 'master' }
             steps {
                 script {
-                    bat """
-                    echo 🚀 Levantando Locust...
-                    docker run -d --name locust --network ecommerce-test -p 8089:8089 darwinl06/locust:%IMAGE_TAG%
+                    bat '''
+                    echo 🚀 Levantando Locust para order-service...
 
-                    echo 🎯 Ejecutando prueba de carga desde Locust...
-                    docker run --rm --network ecommerce-test darwinl06/locust:%IMAGE_TAG% ^
-                        -f locustfile.py ^
-                        --host http://favourite-service-container:8800 ^
-                        --headless -u 10 -r 2 -t 1m
+                    docker run --rm --network ecommerce-test ^
+                    -v "%CD%\\locust-results:/app" ^
+                    jacoboossag/locust:%IMAGE_TAG% ^
+                    -f test/order-service/locustfile.py ^
+                    --host http://order-service-container:8300 ^
+                    --headless -u 10 -r 2 -t 1m ^
+                    --csv order-service-stats --csv-full-history
 
-                    echo ✅ Prueba completada
-                    """
+                    echo 🚀 Levantando Locust para payment-service...
+
+                    docker run --rm --network ecommerce-test ^
+                    -v "%CD%\\locust-results:/app" ^
+                    jacoboossag/locust:%IMAGE_TAG% ^
+                    -f test/payment-service/locustfile.py ^
+                    --host http://payment-service-container:8400 ^
+                    --headless -u 10 -r 1 -t 1m ^
+                    --csv payment-service-stats --csv-full-history
+
+                    echo 🚀 Levantando Locust para favourite-service...
+
+                    docker run --rm --network ecommerce-test ^
+                    -v "%CD%\\locust-results:/app" ^
+                    jacoboossag/locust:%IMAGE_TAG% ^
+                    -f test/favourite-service/locustfile.py ^
+                    --host http://favourite-service-container:8800 ^
+                    --headless -u 10 -r 2 -t 1m ^
+                    --csv favourite-service-stats --csv-full-history
+
+                    echo ✅ Pruebas completadas
+                    '''
                 }
             }
         }
+
+        stage('Run Stress Tests with Locust') {
+            when { branch 'master' }
+            steps {
+                script {
+                    bat '''
+                    echo 🔥 Levantando Locust para prueba de estrés...
+
+                    docker run --rm --network ecommerce-test ^
+                    -v "%CD%\\locust-results:/app" ^
+                    jacoboossag/locust:%IMAGE_TAG% ^
+                    -f test/order-service/locustfile.py ^
+                    --host http://order-service-container:8300 ^
+                    --headless -u 50 -r 5 -t 1m ^
+                    --csv order-service-stress
+
+                    docker run --rm --network ecommerce-test ^
+                    jacoboossag/locust:%IMAGE_TAG% ^
+                    -f test/payment-service/locustfile.py ^
+                    --host http://payment-service-container:8400 ^
+                    --headless -u 50 -r 5 -t 1m ^
+                    --csv payment-service-stress
+
+                    docker run --rm --network ecommerce-test ^
+                    -v "%CD%\\locust-results:/app" ^
+                    jacoboossag/locust:%IMAGE_TAG% ^
+                    -f test/favourite-service/locustfile.py ^
+                    --host http://favourite-service-container:8800 ^
+                    --headless -u 50 -r 5 -t 1m ^
+                    --csv favourite-service-stress
+
+                    echo ✅ Pruebas de estrés completadas
+                    '''
+                }
+            }
+        }
+
 
 
         stage('Detener y eliminar contenedores') {
