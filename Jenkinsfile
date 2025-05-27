@@ -58,74 +58,74 @@ pipeline {
             }
         }
 
-//         stage('Unit Tests') {
-//             when {
-//                 anyOf {
-//                     branch 'dev'; branch 'master'; branch 'release'
-//                     expression { env.BRANCH_NAME.startsWith('feature/') }
-//                 }
-//             }
-//             steps {
-//                 script {
-//                     ['user-service', 'product-service', 'payment-service'].each {
-//                         bat "mvn test -pl ${it}"
-//                     }
-//                 }
-//             }
-//         }
-//
-//         stage('Integration Tests') {
-//             when {
-//                 anyOf {
-//                     branch 'master'
-//                     expression { env.BRANCH_NAME.startsWith('feature/') }
-//                     allOf { not { branch 'master' }; not { branch 'release' } }
-//                 }
-//             }
-//             steps {
-//                 script {
-//                     ['user-service', 'product-service'].each {
-//                         bat "mvn verify -pl ${it}"
-//                     }
-//                 }
-//             }
-//         }
-//
-//         stage('E2E Tests') {
-//             when {
-//                 anyOf {
-//                     branch 'master'
-//                     expression { env.BRANCH_NAME.startsWith('feature/') }
-//                     allOf { not { branch 'master' }; not { branch 'release' } }
-//                 }
-//             }
-//             steps {
-//                 bat "mvn verify -pl e2e-tests"
-//             }
-//         }
+        stage('Unit Tests') {
+            when {
+                anyOf {
+                    branch 'dev'; branch 'master'; branch 'release'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
+            steps {
+                script {
+                    ['user-service', 'product-service', 'payment-service'].each {
+                        bat "mvn test -pl ${it}"
+                    }
+                }
+            }
+        }
 
-//         stage('Build & Package') {
-//             when { anyOf { branch 'master'; branch 'release' } }
-//             steps {
-//                 bat "mvn clean package -DskipTests"
-//             }
-//         }
-//
-//         stage('Build & Push Docker Images') {
-//             when { branch 'master' }
-//             steps {
-//                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
-//                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
-//
-//                     script {
-//                         SERVICES.split().each { service ->
-//                             bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
-//                             bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
-//                         }
-//                     }
-//                 }
-//             }
-//         }
+        stage('Integration Tests') {
+            when {
+                anyOf {
+                    branch 'master'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                    allOf { not { branch 'master' }; not { branch 'release' } }
+                }
+            }
+            steps {
+                script {
+                    ['user-service', 'product-service'].each {
+                        bat "mvn verify -pl ${it}"
+                    }
+                }
+            }
+        }
+
+        stage('E2E Tests') {
+            when {
+                anyOf {
+                    branch 'master'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                    allOf { not { branch 'master' }; not { branch 'release' } }
+                }
+            }
+            steps {
+                bat "mvn verify -pl e2e-tests"
+            }
+        }
+
+        stage('Build & Package') {
+            when { anyOf { branch 'master'; branch 'release' } }
+            steps {
+                bat "mvn clean package -DskipTests"
+            }
+        }
+
+        stage('Build & Push Docker Images') {
+            when { branch 'master' }
+            steps {
+                withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
+                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+
+                    script {
+                        SERVICES.split().each { service ->
+                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
+                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Levantar contenedores para pruebas') {
             steps {
@@ -246,25 +246,31 @@ pipeline {
                     echo 🔥 Levantando Locust para prueba de estrés...
 
                     docker run --rm --network ecommerce-test ^
+                    -v "%CD%\\locust:/mnt" ^
+                    -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
-                    -f test/order-service/locustfile.py ^
+                    -f /mnt/test/order-service/locustfile.py ^
                     --host http://order-service-container:8300 ^
                     --headless -u 50 -r 5 -t 1m ^
-                    --csv order-service-stress
+                    --csv order-service-stress --csv-full-history
 
                     docker run --rm --network ecommerce-test ^
+                    -v "%CD%\\locust:/mnt" ^
+                    -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
-                    -f test/payment-service/locustfile.py ^
+                    -f /mnt/test/payment-service/locustfile.py ^
                     --host http://payment-service-container:8400 ^
                     --headless -u 50 -r 5 -t 1m ^
-                    --csv payment-service-stress
+                    --csv payment-service-stress --csv-full-history
 
                     docker run --rm --network ecommerce-test ^
+                    -v "%CD%\\locust:/mnt" ^
+                    -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
-                    -f test/favourite-service/locustfile.py ^
+                    -f /mnt/test/favourite-service/locustfile.py ^
                     --host http://favourite-service-container:8800 ^
                     --headless -u 50 -r 5 -t 1m ^
-                    --csv favourite-service-stress
+                    --csv favourite-service-stress --csv-full-history
 
                     echo ✅ Pruebas de estrés completadas
                     '''
@@ -298,47 +304,47 @@ pipeline {
         }
 
 
-//         stage('Deploy Common Config') {
-//             when { branch 'master' }
-//             steps {
-//                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
-//             }
-//         }
-//
-//         stage('Deploy Core Services') {
-//             when { branch 'master' }
-//             steps {
-//                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
-//                 bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=200s"
-//
-//                 bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
-//                 bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-//                 bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-//                 bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
-//
-//                 bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
-//                 bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-//                 bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-//                 bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
-//             }
-//         }
-//
-//         stage('Deploy Microservices') {
-//             when { branch 'master' }
-//             steps {
-//                 script {
-//                     echo "👻👻👻👻👻"
-// //                     SERVICES.split().each { svc ->
-// //                         if (!['user-service', ].contains(svc)) {
-// //                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-// //                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-// //                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-// //                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-// //                         }
-// //                     }
-//                 }
-//             }
-//         }
+        stage('Deploy Common Config') {
+            when { branch 'master' }
+            steps {
+                bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
+            }
+        }
+
+        stage('Deploy Core Services') {
+            when { branch 'master' }
+            steps {
+                bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
+                bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=200s"
+
+                bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
+                bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+                bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
+
+                bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
+                bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+                bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
+            }
+        }
+
+        stage('Deploy Microservices') {
+            when { branch 'master' }
+            steps {
+                script {
+                    echo "👻👻👻👻👻"
+//                     SERVICES.split().each { svc ->
+//                         if (!['user-service', ].contains(svc)) {
+//                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+//                         }
+//                     }
+                }
+            }
+        }
     }
 
     post {
