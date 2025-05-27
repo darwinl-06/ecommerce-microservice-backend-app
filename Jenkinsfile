@@ -202,8 +202,7 @@ pipeline {
                     echo 🚀 Levantando Locust para order-service...
 
                     docker run --rm --network ecommerce-test ^
-                    -v "%CD%\\locust-results:/app" ^
-                    jacoboossag/locust:%IMAGE_TAG% ^
+                    darwinl06/locust:%IMAGE_TAG% ^
                     -f test/order-service/locustfile.py ^
                     --host http://order-service-container:8300 ^
                     --headless -u 10 -r 2 -t 1m ^
@@ -212,8 +211,7 @@ pipeline {
                     echo 🚀 Levantando Locust para payment-service...
 
                     docker run --rm --network ecommerce-test ^
-                    -v "%CD%\\locust-results:/app" ^
-                    jacoboossag/locust:%IMAGE_TAG% ^
+                    darwinl06/locust:%IMAGE_TAG% ^
                     -f test/payment-service/locustfile.py ^
                     --host http://payment-service-container:8400 ^
                     --headless -u 10 -r 1 -t 1m ^
@@ -222,8 +220,7 @@ pipeline {
                     echo 🚀 Levantando Locust para favourite-service...
 
                     docker run --rm --network ecommerce-test ^
-                    -v "%CD%\\locust-results:/app" ^
-                    jacoboossag/locust:%IMAGE_TAG% ^
+                    darwinl06/locust:%IMAGE_TAG% ^
                     -f test/favourite-service/locustfile.py ^
                     --host http://favourite-service-container:8800 ^
                     --headless -u 10 -r 2 -t 1m ^
@@ -243,23 +240,21 @@ pipeline {
                     echo 🔥 Levantando Locust para prueba de estrés...
 
                     docker run --rm --network ecommerce-test ^
-                    -v "%CD%\\locust-results:/app" ^
-                    jacoboossag/locust:%IMAGE_TAG% ^
+                    darwinl06/locust:%IMAGE_TAG% ^
                     -f test/order-service/locustfile.py ^
                     --host http://order-service-container:8300 ^
                     --headless -u 50 -r 5 -t 1m ^
                     --csv order-service-stress
 
                     docker run --rm --network ecommerce-test ^
-                    jacoboossag/locust:%IMAGE_TAG% ^
+                    darwinl06/locust:%IMAGE_TAG% ^
                     -f test/payment-service/locustfile.py ^
                     --host http://payment-service-container:8400 ^
                     --headless -u 50 -r 5 -t 1m ^
                     --csv payment-service-stress
 
                     docker run --rm --network ecommerce-test ^
-                    -v "%CD%\\locust-results:/app" ^
-                    jacoboossag/locust:%IMAGE_TAG% ^
+                    darwinl06/locust:%IMAGE_TAG% ^
                     -f test/favourite-service/locustfile.py ^
                     --host http://favourite-service-container:8800 ^
                     --headless -u 50 -r 5 -t 1m ^

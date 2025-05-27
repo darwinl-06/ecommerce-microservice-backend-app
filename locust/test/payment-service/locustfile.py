@@ -4,6 +4,7 @@ import random
 class PaymentServiceUser(HttpUser):
     wait_time = between(1, 3)
     payment_ids = [1, 2, 3]
+    order_ids = [1, 2, 3, 4]
 
     @task
     def get_all_favourites(self):
@@ -13,8 +14,8 @@ class PaymentServiceUser(HttpUser):
                 response.success()
             else:
                 response.failure(f"Unexpected status code: {response.status_code}")
-                
-                
+
+
     @task
     def get_payment_by_id(self):
         payment_id = random.choice(self.payment_ids)
@@ -24,11 +25,11 @@ class PaymentServiceUser(HttpUser):
                 response.success()
             else:
                 response.failure(f"Unexpected status code: {response.status_code}")
-                
-                
+
+
     def get_order_id(self):
-        return random.randint(1, 1000)
-    
+        return random.choice(self.order_ids)
+
     @task
     def should_save_payment(self):
         order_id = self.get_order_id()
@@ -43,10 +44,10 @@ class PaymentServiceUser(HttpUser):
         }
 
         with self.client.post(
-            "/payment-service/api/payments",
-            json=payment_payload,
-            catch_response=True,
-            name="/api/payments"
+                "/payment-service/api/payments",
+                json=payment_payload,
+                catch_response=True,
+                name="/api/payments"
         ) as response:
             if 200 <= response.status_code < 300:
                 response.success()
