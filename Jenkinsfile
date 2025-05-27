@@ -104,28 +104,28 @@ pipeline {
 //             }
 //         }
 
-        stage('Build & Package') {
-            when { anyOf { branch 'master'; branch 'release' } }
-            steps {
-                bat "mvn clean package -DskipTests"
-            }
-        }
-
-        stage('Build & Push Docker Images') {
-            when { branch 'master' }
-            steps {
-                withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
-                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
-
-                    script {
-                        SERVICES.split().each { service ->
-                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
-                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
-                        }
-                    }
-                }
-            }
-        }
+//         stage('Build & Package') {
+//             when { anyOf { branch 'master'; branch 'release' } }
+//             steps {
+//                 bat "mvn clean package -DskipTests"
+//             }
+//         }
+//
+//         stage('Build & Push Docker Images') {
+//             when { branch 'master' }
+//             steps {
+//                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
+//                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+//
+//                     script {
+//                         SERVICES.split().each { service ->
+//                             bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
+//                             bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
         stage('Levantar contenedores para pruebas') {
             steps {
@@ -246,38 +246,31 @@ pipeline {
                     echo 🔥 Levantando Locust para prueba de estrés...
 
                     docker run --rm --network ecommerce-test ^
-                      -v "%CD%\\locust:/mnt" ^
-                      -v "%CD%\\locust-results:/app" ^
-                      darwinl06/locust:%IMAGE_TAG% ^
-                      -f /mnt/test/order-service/locustfile.py ^
-                      --host http://order-service-container:8300 ^
-                      --headless -u 50 -r 5 -t 1m ^
-                      --csv order-service-stress
+                    darwinl06/locust:%IMAGE_TAG% ^
+                    -f test/order-service/locustfile.py ^
+                    --host http://order-service-container:8300 ^
+                    --headless -u 50 -r 5 -t 1m ^
+                    --csv order-service-stress
 
                     docker run --rm --network ecommerce-test ^
-                      -v "%CD%\\locust:/mnt" ^
-                      -v "%CD%\\locust-results:/app" ^
-                      darwinl06/locust:%IMAGE_TAG% ^
-                      -f /mnt/test/payment-service/locustfile.py ^
-                      --host http://payment-service-container:8400 ^
-                      --headless -u 50 -r 5 -t 1m ^
-                      --csv payment-service-stress
+                    darwinl06/locust:%IMAGE_TAG% ^
+                    -f test/payment-service/locustfile.py ^
+                    --host http://payment-service-container:8400 ^
+                    --headless -u 50 -r 5 -t 1m ^
+                    --csv payment-service-stress
 
                     docker run --rm --network ecommerce-test ^
-                      -v "%CD%\\locust:/mnt" ^
-                      -v "%CD%\\locust-results:/app" ^
-                      darwinl06/locust:%IMAGE_TAG% ^
-                      -f /mnt/test/favourite-service/locustfile.py ^
-                      --host http://favourite-service-container:8800 ^
-                      --headless -u 50 -r 5 -t 1m ^
-                      --csv favourite-service-stress
+                    darwinl06/locust:%IMAGE_TAG% ^
+                    -f test/favourite-service/locustfile.py ^
+                    --host http://favourite-service-container:8800 ^
+                    --headless -u 50 -r 5 -t 1m ^
+                    --csv favourite-service-stress
 
                     echo ✅ Pruebas de estrés completadas
                     '''
                 }
             }
         }
-
 
 
 
