@@ -9,7 +9,7 @@ pipeline {
     environment {
         DOCKERHUB_USER = 'darwinl06'
         DOCKER_CREDENTIALS_ID = 'huevos'
-        SERVICES = 'api-gateway cloud-config favourite-service order-service payment-service product-service proxy-client service-discovery shipping-service user-service'
+        SERVICES = 'api-gateway cloud-config favourite-service order-service payment-service product-service proxy-client service-discovery shipping-service user-service locust'
         K8S_NAMESPACE = 'ecommerce'
     }
 
@@ -185,7 +185,7 @@ pipeline {
                     for /f "delims=" %%i in ('curl -s %URL% ^| jq -r ".status"') do (
                         if "%%i"=="UP" goto :eof
                     )
-                    timeout /t 5 /nobreak >nul
+                    timeout /t 5 /nobreak
                     goto wait_loop
                     '''
                 }
