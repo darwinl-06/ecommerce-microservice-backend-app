@@ -351,7 +351,7 @@ pipeline {
                 branch 'master'
             }
             steps {
-                sh '''
+                bat '''
                 echo "📝 Generando Release Notes con convco..."
                 convco changelog > RELEASE_NOTES.md
                 '''
