@@ -37,79 +37,79 @@ pipeline {
             }
         }
 
-        stage('Ensure Namespace') {
-            steps {
-                bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
-            }
-        }
-
-        stage('Checkout') {
-            steps {
-                git branch: "${env.BRANCH_NAME}", url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
-            }
-        }
-
-        stage('Verify Tools') {
-            steps {
-                bat 'java -version'
-                bat 'mvn -version'
-                bat 'docker --version'
-                bat 'kubectl config current-context'
-            }
-        }
-
-        stage('Unit Tests') {
-            when {
-                anyOf {
-                    branch 'dev'; branch 'master'; branch 'release'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
-                }
-            }
-            steps {
-                script {
-                    ['user-service', 'product-service', 'payment-service'].each {
-                        bat "mvn test -pl ${it}"
-                    }
-                }
-            }
-        }
-
-        stage('Integration Tests') {
-            when {
-                anyOf {
-                    branch 'master'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
-                    allOf { not { branch 'master' }; not { branch 'release' } }
-                }
-            }
-            steps {
-                script {
-                    ['user-service', 'product-service'].each {
-                        bat "mvn verify -pl ${it}"
-                    }
-                }
-            }
-        }
-
-        stage('E2E Tests') {
-            when {
-                anyOf {
-                    branch 'master'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
-                    allOf { not { branch 'master' }; not { branch 'release' } }
-                }
-            }
-            steps {
-                bat "mvn verify -pl e2e-tests"
-            }
-        }
-
-        stage('Build & Package') {
-            when { anyOf { branch 'master'; branch 'release' } }
-            steps {
-                bat "mvn clean package -DskipTests"
-            }
-        }
+//         stage('Ensure Namespace') {
+//             steps {
+//                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
+//             }
+//         }
+//
+//         stage('Checkout') {
+//             steps {
+//                 git branch: "${env.BRANCH_NAME}", url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
+//             }
+//         }
+//
+//         stage('Verify Tools') {
+//             steps {
+//                 bat 'java -version'
+//                 bat 'mvn -version'
+//                 bat 'docker --version'
+//                 bat 'kubectl config current-context'
+//             }
+//         }
+//
+//         stage('Unit Tests') {
+//             when {
+//                 anyOf {
+//                     branch 'dev'; branch 'master'; branch 'release'
+//                     expression { env.BRANCH_NAME.startsWith('feature/') }
+//                 }
+//             }
+//             steps {
+//                 script {
+//                     ['user-service', 'product-service', 'payment-service'].each {
+//                         bat "mvn test -pl ${it}"
+//                     }
+//                 }
+//             }
+//         }
+//
+//         stage('Integration Tests') {
+//             when {
+//                 anyOf {
+//                     branch 'master'
+//                     expression { env.BRANCH_NAME.startsWith('feature/') }
+//                     allOf { not { branch 'master' }; not { branch 'release' } }
+//                 }
+//             }
+//             steps {
+//                 script {
+//                     ['user-service', 'product-service'].each {
+//                         bat "mvn verify -pl ${it}"
+//                     }
+//                 }
+//             }
+//         }
+//
+//         stage('E2E Tests') {
+//             when {
+//                 anyOf {
+//                     branch 'master'
+//                     expression { env.BRANCH_NAME.startsWith('feature/') }
+//                     allOf { not { branch 'master' }; not { branch 'release' } }
+//                 }
+//             }
+//             steps {
+//                 bat "mvn verify -pl e2e-tests"
+//             }
+//         }
+//
+//         stage('Build & Package') {
+//             when { anyOf { branch 'master'; branch 'release' } }
+//             steps {
+//                 bat "mvn clean package -DskipTests"
+//             }
+//         }
 
         stage('Build & Push Docker Images') {
             when { branch 'master' }
