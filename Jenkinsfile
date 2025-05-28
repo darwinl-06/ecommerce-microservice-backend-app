@@ -37,26 +37,26 @@ pipeline {
             }
         }
 
-//         stage('Ensure Namespace') {
-//             steps {
-//                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
-//             }
-//         }
-//
-//         stage('Checkout') {
-//             steps {
-//                 git branch: "${env.BRANCH_NAME}", url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
-//             }
-//         }
-//
-//         stage('Verify Tools') {
-//             steps {
-//                 bat 'java -version'
-//                 bat 'mvn -version'
-//                 bat 'docker --version'
-//                 bat 'kubectl config current-context'
-//             }
-//         }
+        stage('Ensure Namespace') {
+            steps {
+                bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                git branch: "${env.BRANCH_NAME}", url: 'https://github.com/darwinl-06/ecommerce-microservice-backend-app.git'
+            }
+        }
+
+        stage('Verify Tools') {
+            steps {
+                bat 'java -version'
+                bat 'mvn -version'
+                bat 'docker --version'
+                bat 'kubectl config current-context'
+            }
+        }
 //
 //         stage('Unit Tests') {
 //             when {
@@ -111,21 +111,21 @@ pipeline {
 //             }
 //         }
 
-        stage('Build & Push Docker Images') {
-            when { branch 'master' }
-            steps {
-                withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
-                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
-
-                    script {
-                        SERVICES.split().each { service ->
-                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
-                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
-                        }
-                    }
-                }
-            }
-        }
+//         stage('Build & Push Docker Images') {
+//             when { branch 'master' }
+//             steps {
+//                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
+//                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+//
+//                     script {
+//                         SERVICES.split().each { service ->
+//                             bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
+//                             bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
         stage('Levantar contenedores para pruebas') {
             steps {
