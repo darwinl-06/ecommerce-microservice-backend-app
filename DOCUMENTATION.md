@@ -485,3 +485,5 @@ class EcommerceUser(HttpUser):
 
 Al ejecutar estas pruebas, Locust genera reportes detallados con métricas como tiempos de respuesta, throughput y tasa de errores, facilitando la toma de decisiones para optimización y dimensionamiento del sistema.
 
+### 6. Ejecucion de la Pipeline
+

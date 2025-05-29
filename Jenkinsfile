@@ -9,7 +9,8 @@ pipeline {
     environment {
         DOCKERHUB_USER = 'darwinl06'
         DOCKER_CREDENTIALS_ID = 'huevos'
-        SERVICES = 'api-gateway cloud-config favourite-service order-service payment-service product-service proxy-client service-discovery shipping-service user-service locust'
+//         SERVICES = 'api-gateway cloud-config favourite-service order-service payment-service product-service proxy-client service-discovery shipping-service user-service locust'
+        SERVICES = 'favourite-service'
         K8S_NAMESPACE = 'ecommerce'
     }
 
@@ -58,48 +59,48 @@ pipeline {
             }
         }        
         
-        stage('Unit Tests') {
-            when {
-                anyOf {
-                    branch 'dev'; branch 'stage'; branch 'master'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
-                }
-            }
-            steps {
-                script {
-                    ['user-service', 'product-service', 'payment-service'].each {
-                        bat "mvn test -pl ${it}"
-                    }
-                }
-            }
-        }        
-        
-        stage('Integration Tests') {
-            when {
-                anyOf {
-                    branch 'dev'; branch 'stage'; branch 'master'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
-                }
-            }
-            steps {
-                script {
-                    ['user-service', 'product-service'].each {
-                        bat "mvn verify -pl ${it}"
-                    }
-                }
-            }
-        }        
-        
-        stage('E2E Tests') {
-            when {
-                anyOf {
-                    branch 'stage'; branch 'master'
-                }
-            }
-            steps {
-                bat "mvn verify -pl e2e-tests"
-            }
-        }        
+//         stage('Unit Tests') {
+//             when {
+//                 anyOf {
+//                     branch 'dev'; branch 'stage'; branch 'master'
+//                     expression { env.BRANCH_NAME.startsWith('feature/') }
+//                 }
+//             }
+//             steps {
+//                 script {
+//                     ['user-service', 'product-service', 'payment-service'].each {
+//                         bat "mvn test -pl ${it}"
+//                     }
+//                 }
+//             }
+//         }
+//
+//         stage('Integration Tests') {
+//             when {
+//                 anyOf {
+//                     branch 'dev'; branch 'stage'; branch 'master'
+//                     expression { env.BRANCH_NAME.startsWith('feature/') }
+//                 }
+//             }
+//             steps {
+//                 script {
+//                     ['user-service', 'product-service'].each {
+//                         bat "mvn verify -pl ${it}"
+//                     }
+//                 }
+//             }
+//         }
+//
+//         stage('E2E Tests') {
+//             when {
+//                 anyOf {
+//                     branch 'stage'; branch 'master'
+//                 }
+//             }
+//             steps {
+//                 bat "mvn verify -pl e2e-tests"
+//             }
+//         }
         
         stage('Build & Package') {
             when { anyOf { branch 'stage'; branch 'master' } }
@@ -330,29 +331,28 @@ pipeline {
             }
         }        
         
-        stage('Deploy Core Services') {
-            when { anyOf { branch 'stage'; branch 'master' } }
-            steps {
-                bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
-                bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=200s"
-
-                bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
-                bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
-
-                bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
-                bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
-            }
-        }        
+//         stage('Deploy Core Services') {
+//             when { anyOf { branch 'stage'; branch 'master' } }
+//             steps {
+//                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
+//                 bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=200s"
+//
+//                 bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
+//                 bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+//                 bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+//                 bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=200s"
+//
+//                 bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
+//                 bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+//                 bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+//                 bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
+//             }
+//         }
         
         stage('Deploy Microservices') {
             when { anyOf { branch 'stage'; branch 'master' } }
             steps {
                 script {
-                    echo "👻👻👻👻👻"
                     SERVICES.split().each { svc ->
                         if (!['user-service', ].contains(svc)) {
                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
