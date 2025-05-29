@@ -56,63 +56,60 @@ pipeline {
                 bat 'docker --version'
                 bat 'kubectl config current-context'
             }
-        }
-//
-//         stage('Unit Tests') {
-//             when {
-//                 anyOf {
-//                     branch 'dev'; branch 'master'; branch 'release'
-//                     expression { env.BRANCH_NAME.startsWith('feature/') }
-//                 }
-//             }
-//             steps {
-//                 script {
-//                     ['user-service', 'product-service', 'payment-service'].each {
-//                         bat "mvn test -pl ${it}"
-//                     }
-//                 }
-//             }
-//         }
-//
-//         stage('Integration Tests') {
-//             when {
-//                 anyOf {
-//                     branch 'master'
-//                     expression { env.BRANCH_NAME.startsWith('feature/') }
-//                     allOf { not { branch 'master' }; not { branch 'release' } }
-//                 }
-//             }
-//             steps {
-//                 script {
-//                     ['user-service', 'product-service'].each {
-//                         bat "mvn verify -pl ${it}"
-//                     }
-//                 }
-//             }
-//         }
-//
-//         stage('E2E Tests') {
-//             when {
-//                 anyOf {
-//                     branch 'master'
-//                     expression { env.BRANCH_NAME.startsWith('feature/') }
-//                     allOf { not { branch 'master' }; not { branch 'release' } }
-//                 }
-//             }
-//             steps {
-//                 bat "mvn verify -pl e2e-tests"
-//             }
-//         }
-//
-//         stage('Build & Package') {
-//             when { anyOf { branch 'master'; branch 'release' } }
-//             steps {
-//                 bat "mvn clean package -DskipTests"
-//             }
-//         }
-
+        }        
+        
+        stage('Unit Tests') {
+            when {
+                anyOf {
+                    branch 'dev'; branch 'stage'; branch 'master'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
+            steps {
+                script {
+                    ['user-service', 'product-service', 'payment-service'].each {
+                        bat "mvn test -pl ${it}"
+                    }
+                }
+            }
+        }        
+        
+        stage('Integration Tests') {
+            when {
+                anyOf {
+                    branch 'dev'; branch 'stage'; branch 'master'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
+            steps {
+                script {
+                    ['user-service', 'product-service'].each {
+                        bat "mvn verify -pl ${it}"
+                    }
+                }
+            }
+        }        
+        
+        stage('E2E Tests') {
+            when {
+                anyOf {
+                    branch 'stage'; branch 'master'
+                }
+            }
+            steps {
+                bat "mvn verify -pl e2e-tests"
+            }
+        }        
+        
+        stage('Build & Package') {
+            when { anyOf { branch 'stage'; branch 'master' } }
+            steps {
+                bat "mvn clean package -DskipTests"
+            }
+        }        
+        
         stage('Build & Push Docker Images') {
-            when { branch 'master' }
+            when { anyOf { branch 'stage'; branch 'master' } }
             steps {
                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
@@ -128,6 +125,12 @@ pipeline {
         }
 
         stage('Levantar contenedores para pruebas') {
+            when {
+                anyOf {
+                    branch 'dev'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
             steps {
                 script {
                     bat '''
@@ -196,7 +199,12 @@ pipeline {
 
 
         stage('Run Load Tests with Locust') {
-            when { branch 'master' }
+            when {
+                anyOf {
+                    branch 'dev'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
             steps {
                 script {
                     bat '''
@@ -240,7 +248,12 @@ pipeline {
         }
 
         stage('Run Stress Tests with Locust') {
-            when { branch 'master' }
+            when {
+                anyOf {
+                    branch 'dev'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
             steps {
                 script {
                     bat '''
@@ -282,6 +295,12 @@ pipeline {
 
 
         stage('Detener y eliminar contenedores') {
+            when {
+                anyOf {
+                    branch 'dev'
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
             steps {
                 script {
                     bat """
@@ -302,18 +321,17 @@ pipeline {
                     """
                 }
             }
-        }
-
-
+        }        
+        
         stage('Deploy Common Config') {
-            when { branch 'master' }
+            when { anyOf { branch 'stage'; branch 'master' } }
             steps {
                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
             }
-        }
-
+        }        
+        
         stage('Deploy Core Services') {
-            when { branch 'master' }
+            when { anyOf { branch 'stage'; branch 'master' } }
             steps {
                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
                 bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=200s"
@@ -328,25 +346,25 @@ pipeline {
                 bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
                 bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
             }
-        }
-
+        }        
+        
         stage('Deploy Microservices') {
-            when { branch 'master' }
+            when { anyOf { branch 'stage'; branch 'master' } }
             steps {
                 script {
                     echo "👻👻👻👻👻"
-//                     SERVICES.split().each { svc ->
-//                         if (!['user-service', ].contains(svc)) {
-//                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-//                         }
-//                     }
+                    SERVICES.split().each { svc ->
+                        if (!['user-service', ].contains(svc)) {
+                            bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+                            bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+                        }
+                    }
                 }
             }
-        }
-
+        }        
+        
         stage('Generate and Archive Release Notes') {
             when {
                 branch 'master'
