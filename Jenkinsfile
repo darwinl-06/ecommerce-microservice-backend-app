@@ -322,7 +322,7 @@ pipeline {
                     """
                 }
             }
-        }        
+        }
         
         stage('Deploy Common Config') {
             when { anyOf { branch 'stage'; branch 'master' } }
@@ -348,7 +348,15 @@ pipeline {
 //                 bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
 //             }
 //         }
-        
+
+        stages {
+            stage('Test DB connection') {
+              steps {
+                bat 'powershell -Command "Test-NetConnection -ComputerName 127.0.0.1 -Port 3306"'
+              }
+            }
+          }
+
         stage('Deploy Microservices') {
             when { anyOf { branch 'stage'; branch 'master' } }
             steps {
