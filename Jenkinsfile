@@ -59,9 +59,15 @@ pipeline {
             }
         }
 
-        stage('Test DB connection') {
+        stage('Esperar MySQL') {
             steps {
-                bat 'powershell -Command "Test-NetConnection -ComputerName 127.0.0.1 -Port 3306"'
+                script {
+                    bat '''
+                    for /l %%x in (1, 1, 10) do (
+                        powershell -Command "if ((Test-NetConnection -ComputerName 127.0.0.1 -Port 3306).TcpTestSucceeded) { exit 0 } else { Start-Sleep -Seconds 5 }"
+                    )
+                    '''
+                }
             }
         }
         
