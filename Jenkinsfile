@@ -355,7 +355,7 @@ pipeline {
                 bat 'powershell -Command "Test-NetConnection -ComputerName 127.0.0.1 -Port 3306"'
               }
             }
-          }
+        }
 
         stage('Deploy Microservices') {
             when { anyOf { branch 'stage'; branch 'master' } }
