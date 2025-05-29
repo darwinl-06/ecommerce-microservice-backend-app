@@ -58,18 +58,6 @@ pipeline {
                 bat 'kubectl config current-context'
             }
         }
-
-        stage('Esperar MySQL') {
-            steps {
-                script {
-                    bat '''
-                    for /l %%x in (1, 1, 10) do (
-                        powershell -Command "if ((Test-NetConnection -ComputerName 127.0.0.1 -Port 3306).TcpTestSucceeded) { exit 0 } else { Start-Sleep -Seconds 5 }"
-                    )
-                    '''
-                }
-            }
-        }
         
 //         stage('Unit Tests') {
 //             when {
