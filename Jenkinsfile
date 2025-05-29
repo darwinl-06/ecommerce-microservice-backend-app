@@ -57,7 +57,13 @@ pipeline {
                 bat 'docker --version'
                 bat 'kubectl config current-context'
             }
-        }        
+        }
+
+        stage('Test DB connection') {
+            steps {
+                bat 'powershell -Command "Test-NetConnection -ComputerName 127.0.0.1 -Port 3306"'
+            }
+        }
         
 //         stage('Unit Tests') {
 //             when {
@@ -349,11 +355,7 @@ pipeline {
 //             }
 //         }
 
-        stage('Test DB connection') {
-            steps {
-                bat 'powershell -Command "Test-NetConnection -ComputerName 127.0.0.1 -Port 3306"'
-            }
-        }
+
 
         stage('Deploy Microservices') {
             when { anyOf { branch 'stage'; branch 'master' } }
