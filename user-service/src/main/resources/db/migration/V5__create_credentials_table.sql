@@ -9,7 +9,7 @@ CREATE TABLE credentials (
 	is_account_non_expired BOOLEAN DEFAULT true,
 	is_account_non_locked BOOLEAN DEFAULT true,
 	is_credentials_non_expired BOOLEAN DEFAULT true,
-	created_at TIMESTAMP DEFAULT LOCALTIMESTAMP NOT NULL NULL_TO_DEFAULT,
-	updated_at TIMESTAMP
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
