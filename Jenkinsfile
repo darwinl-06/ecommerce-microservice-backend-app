@@ -349,11 +349,9 @@ pipeline {
 //             }
 //         }
 
-        stages {
-            stage('Test DB connection') {
-              steps {
+        stage('Test DB connection') {
+            steps {
                 bat 'powershell -Command "Test-NetConnection -ComputerName 127.0.0.1 -Port 3306"'
-              }
             }
         }
 
