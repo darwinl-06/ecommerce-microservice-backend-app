@@ -9,7 +9,7 @@ pipeline {
     environment {
         DOCKERHUB_USER = 'darwinl06'
         DOCKER_CREDENTIALS_ID = 'huevos'
-        SERVICES = 'api-gateway cloud-config favourite-service order-service payment-service product-service proxy-client service-discovery shipping-service user-service locust'
+        SERVICES = 'service-discovery cloud-config api-gateway proxy-client user-service favourite-service order-service product-service shipping-service payment-service locust'
         K8S_NAMESPACE = 'ecommerce'
     }
 
