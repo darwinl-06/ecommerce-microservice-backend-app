@@ -9,7 +9,7 @@ pipeline {
     environment {
         DOCKERHUB_USER = 'darwinl06'
         DOCKER_CREDENTIALS_ID = 'huevos'
-        SERVICES = 'service-discovery cloud-config api-gateway user-service favourite-service order-service product-service proxy-client locust'
+        SERVICES = 'service-discovery cloud-config api-gateway product-service user-service order-service payment-service shipping-service favourite-service proxy-client locust'
         K8S_NAMESPACE = 'ecommerce'
     }
 
@@ -354,7 +354,7 @@ pipeline {
                     echo "👻👻👻👻👻👻"
 
                     SERVICES.split().each { svc ->
-                        if (!['locust'].contains(svc)) {
+                        if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
