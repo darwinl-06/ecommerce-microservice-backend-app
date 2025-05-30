@@ -9,7 +9,7 @@ pipeline {
     environment {
         DOCKERHUB_USER = 'darwinl06'
         DOCKER_CREDENTIALS_ID = 'huevos'
-        SERVICES = 'service-discovery cloud-config api-gateway user-service favourite-service order-service product-service shipping-service payment-service proxy-client locust'
+        SERVICES = 'service-discovery cloud-config api-gateway user-service favourite-service order-service product-service proxy-client locust'
         K8S_NAMESPACE = 'ecommerce'
     }
 
@@ -58,48 +58,48 @@ pipeline {
             }
         }
         
-//         stage('Unit Tests') {
-//             when {
-//                 anyOf {
-//                     branch 'dev'; branch 'stage'; branch 'master'
-//                     expression { env.BRANCH_NAME.startsWith('feature/') }
-//                 }
-//             }
-//             steps {
-//                 script {
-//                     ['user-service', 'product-service', 'payment-service'].each {
-//                         bat "mvn test -pl ${it}"
-//                     }
-//                 }
-//             }
-//         }
-//
-//         stage('Integration Tests') {
-//             when {
-//                 anyOf {
-//                     branch 'dev'; branch 'stage'; branch 'master'
-//                     expression { env.BRANCH_NAME.startsWith('feature/') }
-//                 }
-//             }
-//             steps {
-//                 script {
-//                     ['user-service', 'product-service'].each {
-//                         bat "mvn verify -pl ${it}"
-//                     }
-//                 }
-//             }
-//         }
-//
-//         stage('E2E Tests') {
-//             when {
-//                 anyOf {
-//                     branch 'stage'; branch 'master'
-//                 }
-//             }
-//             steps {
-//                 bat "mvn verify -pl e2e-tests"
-//             }
-//         }
+        stage('Unit Tests') {
+            when {
+                anyOf {
+                    branch 'dev'; branch 'stage';
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
+            steps {
+                script {
+                    ['user-service', 'product-service', 'payment-service'].each {
+                        bat "mvn test -pl ${it}"
+                    }
+                }
+            }
+        }
+
+        stage('Integration Tests') {
+            when {
+                anyOf {
+                    branch 'dev'; branch 'stage';
+                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                }
+            }
+            steps {
+                script {
+                    ['user-service', 'product-service'].each {
+                        bat "mvn verify -pl ${it}"
+                    }
+                }
+            }
+        }
+
+        stage('E2E Tests') {
+            when {
+                anyOf {
+                    branch 'stage';
+                }
+            }
+            steps {
+                bat "mvn verify -pl e2e-tests"
+            }
+        }
 
         stage('Build & Package') {
             when { anyOf { branch 'stage'; branch 'master' } }
