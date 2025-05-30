@@ -9,7 +9,7 @@ pipeline {
     environment {
         DOCKERHUB_USER = 'darwinl06'
         DOCKER_CREDENTIALS_ID = 'huevos'
-        SERVICES = 'service-discovery cloud-config api-gateway proxy-client user-service favourite-service order-service product-service shipping-service payment-service locust'
+        SERVICES = 'service-discovery cloud-config api-gateway user-service favourite-service order-service product-service shipping-service payment-service proxy-client locust'
         K8S_NAMESPACE = 'ecommerce'
     }
 
@@ -127,8 +127,7 @@ pipeline {
         stage('Levantar contenedores para pruebas') {
             when {
                 anyOf {
-                    branch 'dev'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                    branch 'stage'
                 }
             }
             steps {
@@ -199,8 +198,7 @@ pipeline {
         stage('Run Load Tests with Locust') {
             when {
                 anyOf {
-                    branch 'dev'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                    branch 'stage'
                 }
             }
             steps {
@@ -248,8 +246,7 @@ pipeline {
         stage('Run Stress Tests with Locust') {
             when {
                 anyOf {
-                    branch 'dev'
-                    expression { env.BRANCH_NAME.startsWith('feature/') }
+                    branch 'stage'
                 }
             }
             steps {
