@@ -58,6 +58,13 @@ pipeline {
             }
         }
 
+        stage('Build & Package') {
+            when { anyOf { branch 'stage'; } }
+            steps {
+                bat "mvn clean package -DskipTests"
+            }
+        }
+
         stage('Build & Push Docker Images') {
             when { anyOf { branch 'stage'; branch 'master' } }
             steps {
@@ -74,13 +81,6 @@ pipeline {
             }
         }
 
-        stage('Build & Package') {
-            when { anyOf { branch 'stage'; } }
-                steps {
-                    bat "mvn clean package -DskipTests"
-                }
-            }
-        
         stage('Unit Tests') {
             when {
                 anyOf {
