@@ -19,7 +19,7 @@ pipeline {
             steps {
                 script {
                     def profileConfig = [
-                        master : ['master', '-prod'],
+                        master : ['prod', '-prod'],
                         stage  : ['stage', '-stage']
                     ]
                     def config = profileConfig[env.BRANCH_NAME] ?: ['dev', '-dev']
