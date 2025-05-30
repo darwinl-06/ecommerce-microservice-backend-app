@@ -53,14 +53,14 @@ spec:
             httpGet:
               path: /product-service/actuator/health # Ajusta la ruta según tu configuración de actuator
               port: 8500
-            initialDelaySeconds: 200 # Tiempo para que el servicio inicie completamente
+            initialDelaySeconds: 120 # Tiempo para que el servicio inicie completamente
             periodSeconds: 10
             failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /product-service/actuator/health # Ajusta la ruta según tu configuración de actuator
               port: 8500
-            initialDelaySeconds: 200
+            initialDelaySeconds: 120
             periodSeconds: 10
             failureThreshold: 3
           volumeMounts:
