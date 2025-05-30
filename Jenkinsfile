@@ -349,14 +349,14 @@ pipeline {
                 script {
                     echo "👻👻👻👻👻👻"
 
-//                     SERVICES.split().each { svc ->
-//                         if (!['user-service', ].contains(svc)) {
-//                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-//                         }
-//                     }
+                    SERVICES.split().each { svc ->
+                        if (!['user-service', ].contains(svc)) {
+                            bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+                            bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+                        }
+                    }
                 }
             }
         }        

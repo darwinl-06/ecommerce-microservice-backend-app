@@ -418,10 +418,10 @@ void shouldSaveUser(){
             "city", "Cali"
     );
     Map<String, Object> userPayload = Map.of(
-            "firstName", "Jacobo",
-            "lastName", "Ossa",
+            "firstName", "Darwin",
+            "lastName", "Lenis",
             "imageUrl", "http://placeholder:200",
-            "email", "jaco@gmial.com",
+            "email", "darpa@gmial.com",
             "phone", "3218770876",
             "addressDtos", List.of(addressPayload),
             "credential", credentialPayload
