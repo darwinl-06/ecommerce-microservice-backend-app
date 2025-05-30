@@ -384,15 +384,16 @@ pipeline {
         success {
             echo "✅ Pipeline OK (${env.BRANCH_NAME}) - ${SPRING_PROFILES_ACTIVE}"
 
-            if (env.BRANCH_NAME == 'stage') {
-                publishHTML([
-                    reportDir: 'locust-reports',
-                    reportFiles: 'order-service-report.html, payment-service-report.html, favourite-service-report.html',
-                    reportName: 'Locust Stress Test Reports',
-                    keepAll: true
-                ])
+            script {
+                if (env.BRANCH_NAME == 'stage') {
+                    publishHTML([
+                        reportDir: 'locust-reports',
+                        reportFiles: 'order-service-report.html, payment-service-report.html, favourite-service-report.html',
+                        reportName: 'Locust Stress Test Reports',
+                        keepAll: true
+                    ])
+                }
             }
-
         }
         failure {
             echo "❌ Falló pipeline en ${env.BRANCH_NAME}. Ver logs."
