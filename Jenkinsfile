@@ -20,9 +20,9 @@ pipeline {
                 script {
                     def profileConfig = [
                         master : ['prod', '-prod'],
-                        stage: ['stage', '-stage']
+                        stage  : ['stage', '-stage']
                     ]
-                    def config = profileConfig.get(env.BRANCH_NAME, ['dev', '-dev'])
+                    def config = profileConfig[env.BRANCH_NAME] ?: ['dev', '-dev']
 
                     env.SPRING_PROFILES_ACTIVE = config[0]
                     env.IMAGE_TAG = config[0]
@@ -32,10 +32,10 @@ pipeline {
                     echo "🌱 Spring profile: ${env.SPRING_PROFILES_ACTIVE}"
                     echo "🏷️ Image tag: ${env.IMAGE_TAG}"
                     echo "📂 Deployment suffix: ${env.DEPLOYMENT_SUFFIX}"
-
                 }
             }
         }
+
 
         stage('Ensure Namespace') {
             steps {
