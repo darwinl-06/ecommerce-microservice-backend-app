@@ -212,6 +212,8 @@ pipeline {
 
                     docker run --rm --network ecommerce-test ^
                     -v "%CD%\\locust-reports:/mnt/locust" ^
+                    -v "%CD%\\locust:/mnt" ^
+                    -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
                     -f test/order-service/locustfile.py ^
                     --host http://order-service-container:8300/ ^
@@ -223,6 +225,8 @@ pipeline {
 
                     docker run --rm --network ecommerce-test ^
                     -v "%CD%\\locust-reports:/mnt/locust" ^
+                    -v "%CD%\\locust:/mnt" ^
+                    -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
                     -f /mnt/test/payment-service/locustfile.py ^
                     --host http://payment-service-container:8400 ^
@@ -233,7 +237,9 @@ pipeline {
                     echo 🚀 Levantando Locust para favourite-service...
 
                     docker run --rm --network ecommerce-test ^
-                    -v "%CD%\\locust-reports:/mnt/locust" ^^
+                    -v "%CD%\\locust-reports:/mnt/locust" ^
+                    -v "%CD%\\locust:/mnt" ^
+                    -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
                     -f /mnt/test/favourite-service/locustfile.py ^
                     --host http://favourite-service-container:8800 ^
@@ -260,6 +266,8 @@ pipeline {
 
                     docker run --rm --network ecommerce-test ^
                     -v "%CD%\\locust-reports:/mnt/locust" ^
+                    -v "%CD%\\locust:/mnt" ^
+                    -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
                     -f /mnt/test/order-service/locustfile.py ^
                     --host http://order-service-container:8300 ^
@@ -269,6 +277,8 @@ pipeline {
 
                     docker run --rm --network ecommerce-test ^
                     -v "%CD%\\locust-reports:/mnt/locust" ^
+                    -v "%CD%\\locust:/mnt" ^
+                    -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
                     -f /mnt/test/payment-service/locustfile.py ^
                     --host http://payment-service-container:8400 ^
@@ -278,6 +288,8 @@ pipeline {
 
                     docker run --rm --network ecommerce-test ^
                     -v "%CD%\\locust-reports:/mnt/locust" ^
+                    -v "%CD%\\locust:/mnt" ^
+                    -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
                     -f /mnt/test/favourite-service/locustfile.py ^
                     --host http://favourite-service-container:8800 ^
