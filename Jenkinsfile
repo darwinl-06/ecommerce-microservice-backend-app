@@ -94,6 +94,7 @@ pipeline {
                         bat "mvn test -pl ${it}"
                     }
                 }
+                junit '*/target/surefire-reports/.xml'
             }
         }
 
@@ -110,6 +111,7 @@ pipeline {
                         bat "mvn verify -pl ${it}"
                     }
                 }
+                junit '*/target/failsafe-reports/TEST-.xml'
             }
         }
 
@@ -121,6 +123,7 @@ pipeline {
             }
             steps {
                 bat "mvn verify -pl e2e-tests"
+                junit 'e2e-tests/target/failsafe-reports/*.xml'
             }
         }
 
