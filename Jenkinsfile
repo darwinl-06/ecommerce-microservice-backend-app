@@ -19,7 +19,7 @@ pipeline {
             steps {
                 script {
                     def profileConfig = [
-                        master : ['prod', '-prod'],
+                        master : ['master', '-prod'],
                         stage  : ['stage', '-stage']
                     ]
                     def config = profileConfig[env.BRANCH_NAME] ?: ['dev', '-dev']
@@ -57,6 +57,29 @@ pipeline {
                 bat 'kubectl config current-context'
             }
         }
+
+        stage('Build & Push Docker Images') {
+            when { anyOf { branch 'stage'; branch 'master' } }
+            steps {
+                withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
+                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+
+                    script {
+                        SERVICES.split().each { service ->
+                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
+                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build & Package') {
+            when { anyOf { branch 'stage'; } }
+                steps {
+                    bat "mvn clean package -DskipTests"
+                }
+            }
         
         stage('Unit Tests') {
             when {
@@ -77,7 +100,7 @@ pipeline {
         stage('Integration Tests') {
             when {
                 anyOf {
-                    branch 'dev'; branch 'stage';
+                    branch 'dev';
                     expression { env.BRANCH_NAME.startsWith('feature/') }
                 }
             }
@@ -98,29 +121,6 @@ pipeline {
             }
             steps {
                 bat "mvn verify -pl e2e-tests"
-            }
-        }
-
-        stage('Build & Package') {
-            when { anyOf { branch 'stage'; branch 'master' } }
-            steps {
-                bat "mvn clean package -DskipTests"
-            }
-        }
-
-        stage('Build & Push Docker Images') {
-            when { anyOf { branch 'stage'; branch 'master' } }
-            steps {
-                withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
-                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
-
-                    script {
-                        SERVICES.split().each { service ->
-                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
-                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
-                        }
-                    }
-                }
             }
         }
 
@@ -292,7 +292,7 @@ pipeline {
         stage('Detener y eliminar contenedores') {
             when {
                 anyOf {
-                    branch 'dev'
+                    branch 'stage'
                     expression { env.BRANCH_NAME.startsWith('feature/') }
                 }
             }
@@ -319,14 +319,14 @@ pipeline {
         }
         
         stage('Deploy Common Config') {
-            when { anyOf { branch 'stage'; branch 'master' } }
+            when { anyOf { branch 'master' } }
             steps {
                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
             }
         }        
         
         stage('Deploy Core Services') {
-            when { anyOf { branch 'stage'; branch 'master' } }
+            when { anyOf { branch 'master' } }
             steps {
                 bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
                 bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=200s"
@@ -344,17 +344,19 @@ pipeline {
         }
 
         stage('Deploy Microservices') {
-            when { anyOf { branch 'stage'; branch 'master' } }
+            when { anyOf { branch 'master' } }
             steps {
                 script {
-                    SERVICES.split().each { svc ->
-                        if (!['user-service', ].contains(svc)) {
-                            bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-                            bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                            bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                            bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-                        }
-                    }
+                    echo "👻👻👻👻👻👻"
+
+//                     SERVICES.split().each { svc ->
+//                         if (!['user-service', ].contains(svc)) {
+//                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+//                         }
+//                     }
                 }
             }
         }        
