@@ -54,14 +54,14 @@ spec:
           # # Opcional: Liveness and Readiness Probes
           livenessProbe:
             httpGet:
-              path: /app/actuator/health
+              path: /proxy-client/actuator/health
               port: 8900
             initialDelaySeconds: 180
             periodSeconds: 10
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /app/actuator/health
+              path: /proxy-client/actuator/health
               port: 8900
             initialDelaySeconds: 180
             periodSeconds: 10
