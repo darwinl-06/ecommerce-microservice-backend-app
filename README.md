@@ -432,7 +432,7 @@ El desarrollo comenzó con la configuración de un entorno local que permitiera 
 
 La configuración inicial requirió la creación de un archivo Docker Compose que definiera cada uno de los 11 microservicios del proyecto: service-discovery (Eureka Server), cloud-config (Configuration Server), api-gateway, product-service, user-service, order-service, payment-service, shipping-service, favourite-service, proxy-client, y locust para pruebas de rendimiento. Cada servicio fue configurado con sus respectivos puertos, variables de entorno y dependencias específicas.
 
-![alt text](images\image_compose_yml.png)
+![alt text](images/image_compose_yml.png)
 
 La estructura del compose.yml incluye la definición de redes internas que permiten la comunicación entre servicios, volúmenes persistentes para datos que requieren permanencia, y la configuración de healthchecks para garantizar que los servicios dependientes no inicien hasta que sus dependencias estén completamente operativas.
 
@@ -442,7 +442,7 @@ Cada microservicio requirió la creación de un Dockerfile específico que defin
 
  El Dockerfile implementado utiliza un enfoque multi-stage que optimiza el tamaño final de la imagen, separando la fase de construcción de la fase de ejecución.
 
-![alt text](images\image_dockerfile.png)
+![alt text](images/image_dockerfile.png)
 
 
 
@@ -456,7 +456,7 @@ Se creó la cuenta con el usuario `darwinl06` que se utilizó consistentemente a
 
 El proceso incluyó la configuración de repositorios públicos para cada uno de los 11 microservicios del proyecto. Cada servicio tiene su propio repositorio en Docker Hub siguiendo la convención de nombres: `darwinl06/service-name`, donde service-name corresponde a cada microservicio (api-gateway, user-service, product-service, etc.).
 
-![alt text](images\image_dockerhub_general.png)
+![alt text](images/image_dockerhub_general.png)
 
 Para automatizar el proceso de subida de imágenes, se configuraron las credenciales de Docker Hub que posteriormente serían utilizadas por Jenkins durante el pipeline de CI/CD. Esto permite que el pipeline construya las imágenes localmente y las suba automáticamente al registro de Docker Hub con tags específicos según la rama y versión del código.
 
@@ -465,7 +465,7 @@ La estrategia de tagging implementada utiliza diferentes etiquetas según el ent
 - **Tag `stage`**: Para imágenes del entorno de staging
 - **Tag `prod`**: Para imágenes de producción desde la rama master
 
-![alt text](images\image_dockerhub_especifico.png)
+![alt text](images/image_dockerhub_especifico.png)
 
 Esta configuración de Docker Hub es fundamental para el pipeline de CI/CD, ya que actúa como el puente entre la construcción de imágenes y el despliegue en Kubernetes, permitiendo que los diferentes entornos accedan a las versiones correctas de cada microservicio.
 
@@ -475,11 +475,11 @@ Para el entorno de Kubernetes local se procedió con la instalación de Minikube
 
 Una vez instalado Minikube, se procedió con la inicialización del clúster local mediante el comando `minikube start driver=docker`. La configuración inicial incluyó la habilitación de addons necesarios como el ingress controller y el dashboard de Kubernetes.
 
-![alt text](images\image_minikube_docker.png)
+![alt text](images/image_minikube_docker.png)
 
 La verificación de la instalación se realizó mediante comandos como `kubectl cluster-info` y `minikube dashboard` para confirmar que el clúster estaba operativo y accesible. Posteriormente se configuró el contexto de kubectl para apuntar al clúster de Minikube, permitiendo la ejecución de comandos de Kubernetes desde la terminal local.
 
-![alt text](images\image_kubernetes.png)
+![alt text](images/image_kubernetes.png)
 
 ### 6.5 Configuración de Manifiestos de Kubernetes
 
@@ -494,29 +494,29 @@ metadata:
   name: ecommerce
 ```
 
-![alt text](images\image_k8s.png)
+![alt text](images/image_k8s.png)
 
 Para cada microservicio se crearon tres tipos de manifiestos: Deployment (que define cómo se ejecuta el servicio), Service (que expone el servicio internamente en el clúster), y opcionalmente Ingress (para servicios que requieren acceso externo como el Api-Gateway). Los Deployments fueron configurados con estrategias de rolling update, health checks, y resource limits apropiados para cada servicio.
 
 El proceso incluyó la configuración específica de cada servicio con sus respectivas variables de entorno, como las URLs de connection para la base de datos, los endpoints de service discovery (Eureka), y las configuraciones específicas de cada microservicio. Los Services fueron configurados con ClusterIP para comunicación interna y LoadBalancer para servicios que requieren acceso externo como el API Gateway.
 
-![alt text](images\image_deployment.png)
+![alt text](images/image_deployment.png)
 
-![alt text](images\image_service.png)
+![alt text](images/image_service.png)
 
 ### 6.6 Configuración de Jenkins para CI/CD
 
 La implementación del pipeline de CI/CD requirió la instalación y configuración de Jenkins como servidor de integración continua. El proceso comenzó con la instalación de Jenkins en el entorno local, seguido de la configuración de plugins necesarios para Docker, Kubernetes, y Git.
 
-![alt text](images\image_panel_deafult.png)
+![alt text](images/image_panel_deafult.png)
 
 Una vez instalado Jenkins, se procedió con la configuración de credenciales para acceder a Docker Hub donde se almacenarían las imágenes de los microservicios. Estas credenciales fueron configuradas con el usuario `darwinl06` que se utilizó consistentemente a lo largo del proyecto para el almacenamiento de todas las imágenes Docker. Tambien un access token de GitHub.
 
-![alt text](images\image_credentials.png)
+![alt text](images/image_credentials.png)
 
 La configuración incluyó la instalación de plugins específicos como Docker Pipeline, Kubernetes CLI, y Pipeline Stage View para mejorar la funcionalidad del pipeline. También se configuró la integración con Git para permitir que Jenkins detecte cambios en el repositorio y ejecute el pipeline correspondiente.
 
-![alt text](images\image_plugins.png)
+![alt text](images/image_plugins.png)
 
 Se estableció un pipeline multibranch que permite manejar diferentes ramas del repositorio de forma independiente, cada una con su propio ciclo de despliegue. Esta configuración es particularmente útil durante el desarrollo cuando se trabaja con features branches que requieren despliegues separados para pruebas.
 
@@ -526,7 +526,7 @@ Se estableció un pipeline multibranch que permite manejar diferentes ramas del 
 
 El corazón del pipeline de CI/CD es el Jenkinsfile que define todas las etapas del proceso de construcción, pruebas y despliegue. El archivo desarrollado contiene 421 líneas de código que implementa un pipeline sofisticado con lógica condicional basada en ramas y múltiples tipos de pruebas.
 
-![alt text](images\image_jenkinsfile.png)
+![alt text](images/image_jenkinsfile.png)
 
 El Jenkinsfile implementa una estrategia de ramificación que utiliza bloques `when {}` para definir qué stages se ejecutan en cada rama específica. Esta configuración permite diferentes flujos de trabajo según el entorno de destino:
 
@@ -555,7 +555,7 @@ when { anyOf { branch 'master'; branch 'stage'; branch 'dev'; } }
 ```
 Este stage ejecuta `mvn clean package -DskipTests` y se activa en las ramas principales. Construye todos los microservicios del proyecto sin ejecutar pruebas para optimizar tiempo de construcción.
 
-![alt text](images\image_build&package.png)
+![alt text](images/image_build&package.png)
 
 **Stage: Build & Push Docker Images** 
 ```groovy
@@ -563,7 +563,7 @@ when { anyOf { branch 'stage'; branch 'master' } }
 ```
 Exclusivo para ramas `stage` y `master`, este stage construye y sube las imágenes Docker a DockerHub con el usuario `darwinl06`. Cada uno de los 11 microservicios es procesado individualmente con tags específicos según la rama.
 
-![alt text](images\image_buildandpushdocker.png)
+![alt text](images/image_buildandpushdocker.png)
 
 **Stage: Unit Tests**
 ```groovy
@@ -576,7 +576,7 @@ when {
 ```
 Ejecuta pruebas unitarias en `user-service`, `product-service` y `payment-service`. Se activa en ramas de desarrollo, staging y ramas de feature. Los resultados se publican usando el plugin JUnit de Jenkins.
 
-![alt text](images\image_unit_test.png)
+![alt text](images/image_unit_test.png)
 
 **Stage: Integration Tests**
 ```groovy
@@ -589,7 +589,7 @@ when {
 ```
 Ejecuta pruebas de integración usando `mvn verify` en `user-service` y `product-service`. Valida la interacción entre componentes y la integración con bases de datos embebidas.
 
-![alt text](images\image_integration.png)
+![alt text](images/image_integration.png)
 
 **Stage: E2E Tests**
 ```groovy
@@ -597,7 +597,7 @@ when { anyOf { branch 'stage'; } }
 ```
 Exclusivo para la rama `stage`, ejecuta las pruebas end-to-end que validan flujos completos de usuario a través de múltiples microservicios. Utiliza el módulo `e2e-tests` del proyecto.
 
-![alt text](images\image_e2e.png)
+![alt text](images/image_e2e.png)
 
 ### 6.8 Ejecución Específica por Rama
 
@@ -611,8 +611,8 @@ En la rama `dev` se ejecutan los siguientes stages:
 - Unit Tests
 - Integration Tests
 
-![alt text](images\image_general_dev.png)
-![alt text](images\image_pipeline_dev.png)
+![alt text](images/image_general_dev.png)
+![alt text](images/image_pipeline_dev.png)
 
 #### 6.8.2 Rama Staging (stage)  
 La rama `stage` ejecuta el pipeline más completo incluyendo:
@@ -624,8 +624,8 @@ La rama `stage` ejecuta el pipeline más completo incluyendo:
 - Run Stress Tests with Locust  
 - Detener y eliminar contenedores
 
-![alt text](images\image_stage_general.png)
-![alt text](images\image_pipeline_stage.png) 
+![alt text](images/image_stage_general.png)
+![alt text](images/image_pipeline_stage.png) 
 
 #### 6.8.3 Rama Master (master)
 La rama `master` se enfoca en despliegue a producción:
@@ -637,30 +637,30 @@ La rama `master` se enfoca en despliegue a producción:
 - Deploy Microservices
 - Generate and Archive Release Notes 
 
-![alt text](images\image_master_general.png)
-![alt text](images\image_rama_master.png)
+![alt text](images/image_master_general.png)
+![alt text](images/image_rama_master.png)
 
 ### 6.8 Implementación Completa de Pruebas
 
-![alt text](images\image_test.png)
+![alt text](images/image_test.png)
 
 #### 6.8.1 Pruebas Unitarias
 Las pruebas unitarias se ejecutan en las ramas `dev`, `stage` y `feature/*` usando Maven. El pipeline ejecuta `mvn test` específicamente en los servicios que contienen pruebas unitarias implementadas: `user-service`, `product-service` y `payment-service`. Los resultados se publican automáticamente en Jenkins a través del plugin JUnit.
 
-![alt text](images\image_test_unitarios.png)
-![alt text](images\image_unitarios_pipelineJ.png)
+![alt text](images/image_test_unitarios.png)
+![alt text](images/image_unitarios_pipelineJ.png)
 
 #### 6.8.2 Pruebas de Integración  
 Las pruebas de integración utilizan `mvn verify` y se ejecutan en `user-service` y `product-service`. Estas pruebas validan la correcta integración entre las capas de la aplicación, incluyendo controladores REST, servicios y repositorios con bases de datos embebidas.
 
-![alt text](images\image_test_integracion.png)
-![alt text](images\image_test_integracionJ.png)
+![alt text](images/image_test_integracion.png)
+![alt text](images/image_test_integracionJ.png)
 
 #### 6.8.3 Pruebas End-to-End (E2E)
 Las pruebas E2E se ejecutan exclusivamente en la rama `stage` usando el módulo `e2e-tests`. Estas pruebas validan flujos completos de usuario que atraviesan múltiples microservicios, asegurando que la integración entre servicios funcione correctamente en un entorno similar a producción.
 
-![alt text](images\image_test_e2e.png)
-![alt text](images\image_test_e2eJ.png)
+![alt text](images/image_test_e2e.png)
+![alt text](images/image_test_e2eJ.png)
 
 #### 6.8.4 Pruebas de Rendimiento con Locust
 
@@ -671,7 +671,7 @@ Antes de ejecutar las pruebas de Locust, el pipeline levanta un entorno de prueb
 - Cloud Config (configuración centralizada)
 - Todos los microservicios de negocio
 
-![alt text](images\image_test_containers.png)
+![alt text](images/image_test_containers.png)
 
 Cada servicio incluye health checks para asegurar que esté completamente operativo antes de continuar.
 
@@ -681,14 +681,14 @@ Ejecuta pruebas de carga normal con 10 usuarios concurrentes (`-u 10 -r 2 -t 1m`
 - payment-service (puerto 8400)  
 - favourite-service (puerto 8800)
 
-![alt text](images\image_load_test.png)
+![alt text](images/image_load_test.png)
 
 Cada prueba genera un reporte HTML específico que se almacena en `locust-reports/`.
 
 **Stage: Run Stress Tests with Locust**  
 Ejecuta pruebas de estrés con 50 usuarios concurrentes (`-u 50 -r 5 -t 1m`) en los mismos servicios. Estas pruebas evalúan el comportamiento del sistema bajo alta carga y permiten identificar puntos de quiebre y cuellos de botella.
 
-![alt text](images\image_stress_test.png)
+![alt text](images/image_stress_test.png)
 
 ### 6.9 Resultados 
 
@@ -705,22 +705,22 @@ Los resultados de las pruebas de carga con Locust muestran el comportamiento del
 
 En las pruebas de carga, el favourite-service mostró un rendimiento muy aceptable. El tiempo de respuesta promedio fue de 79.05 ms, con un percentil 95 del tiempo de respuesta en 110 ms, lo que indica que el 95% de las peticiones fueron atendidas en menos de ese tiempo. La tasa de solicitudes por segundo (RPS) se mantuvo en 5.0, sin registrar errores. Esto demuestra que el servicio se comporta de manera estable y eficiente bajo condiciones normales de uso.
 
-![alt text](images\image_favourite_load.png)
-![alt text](images\total_requests_per_second_1748665700.471.png)
+![alt text](images/image_favourite_load.png)
+![alt text](images/total_requests_per_second_1748665700.471.png)
 
 **Order Service**
 
 Este servicio presentó el mejor rendimiento en las pruebas de carga. Con un tiempo de respuesta promedio de apenas 9.20 ms y un percentil 95 de 12 ms, el order-service maneja las peticiones con gran rapidez. Su RPS fue de 5.4, también sin errores. Estas métricas reflejan una alta eficiencia y bajo consumo de recursos, posicionándolo como el servicio más optimizado de los tres en este escenario.
 
-![alt text](images\image_order_load.png)
-![alt text](images\total_requests_per_second_1748665702.313.png)
+![alt text](images/image_order_load.png)
+![alt text](images/total_requests_per_second_1748665702.313.png)
 
 **Payment Service**
 
 El payment-service mostró tiempos de respuesta notablemente más altos comparado con los otros microservicios. El promedio fue de 216.49 ms, con un percentil 95 de 370 ms. Aunque la RPS fue aceptable (5.3) y no se registraron errores, estos valores indican un rendimiento más limitado, posiblemente por operaciones complejas o mayor uso de recursos. Si bien es funcional bajo carga normal, no es tan eficiente como los otros.
 
-![alt text](images\image_payment_load.png)
-![alt text](images\total_requests_per_second_1748665703.693.png)
+![alt text](images/image_payment_load.png)
+![alt text](images/total_requests_per_second_1748665703.693.png)
 
 **Pruebas de Stress Testing**  
 
@@ -734,22 +734,22 @@ Las pruebas de estrés revelan el comportamiento del sistema bajo alta carga, id
 
 Bajo condiciones de alta carga, el favourite-service mantuvo un rendimiento sobresaliente. Logró una tasa de 25.1 solicitudes por segundo, con un tiempo de respuesta promedio de 31.35 ms y percentil 95 de 76 ms, sin errores reportados. Esto demuestra que el servicio escala de forma excelente, siendo robusto y confiable incluso en escenarios exigentes.
 
-![alt text](images\image_favourite_stress.png)
-![alt text](images\total_requests_per_second_1748666271.202.png)
+![alt text](images/image_favourite_stress.png)
+![alt text](images/total_requests_per_second_1748666271.202.png)
 
 **Order Service**
 
 El order-service también mostró una capacidad de escalabilidad excepcional en las pruebas de estrés. Alcanzó una tasa de 23.6 RPS con un tiempo de respuesta promedio bajísimo de 3.31 ms y percentil 95 de 7 ms. Estos valores confirman que el servicio es extremadamente rápido y eficiente incluso con un alto volumen de peticiones simultáneas, ideal para entornos de alta demanda.
 
-![alt text](images\image_order_stress.png)
-![alt text](images\total_requests_per_second_1748666273.171.png)
+![alt text](images/image_order_stress.png)
+![alt text](images/total_requests_per_second_1748666273.171.png)
 
 **Payment Service**
 
 En contraste, el payment-service evidenció limitaciones importantes bajo estrés. Aunque alcanzó 14.7 RPS, su tiempo de respuesta promedio se disparó a 1804.94 ms, con un percentil 95 de 5200 ms y un pico máximo de 7070 ms, sin errores. Aunque funcional, su rendimiento cae considerablemente bajo carga alta, lo que lo convierte en el principal candidato para optimización o escalamiento.
 
-![alt text](images\image_payment_stress.png)
-![alt text](images\total_requests_per_second_1748666274.634.png)
+![alt text](images/image_payment_stress.png)
+![alt text](images/total_requests_per_second_1748666274.634.png)
 
 #### 6.9.2 Despliegue Exitoso en Kubernetes
 
@@ -761,7 +761,7 @@ En la rama `master`, el pipeline despliega los servicios fundamentales en el sig
 
 Cada despliegue incluye `kubectl rollout status` con timeout de 300 segundos para verificar que el servicio esté completamente operativo.
 
-![alt text](images\image_deploy_core.png)
+![alt text](images/image_deploy_core.png)
 
 
 **Deploy Microservices**
@@ -774,14 +774,14 @@ Posteriormente se despliegan los microservicios de negocio:
 
 Cada microservicio se despliega con la imagen correspondiente del tag de la rama, configuración de variables de entorno específicas, y verificación de rollout exitoso.
 
-![alt text](images\image_deploy_microservices.png)
+![alt text](images/image_deploy_microservices.png)
 
-![alt text](images\image_kubernetes_pods.png)
+![alt text](images/image_kubernetes_pods.png)
 
 El proceso concluye con la generación automática de release notes usando `convco changelog` y el archivado de artefactos en Jenkins, proporcionando trazabilidad completa del despliegue y documentación automática de cambios para cada release en producción.
 
-![alt text](images\image_release_notes.png)
+![alt text](images/image_release_notes.png)
 
-![alt text](images\image_changelog_gen.png)
+![alt text](images/image_changelog_gen.png)
 
-![alt text](images\image_release_notes_vista.png)
+![alt text](images/image_release_notes_vista.png)
