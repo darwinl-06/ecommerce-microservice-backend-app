@@ -218,11 +218,11 @@ pipeline {
                     -v "%CD%\\locust:/mnt" ^
                     -v "%CD%\\locust-results:/app" ^
                     darwinl06/locust:%IMAGE_TAG% ^
-                    -f test/order-service/locustfile.py ^
+                    -f /mnt/test/order-service/locustfile.py ^
                     --host http://order-service-container:8300/ ^
                     --headless -u 10 -r 2 -t 1m ^
                     --only-summary ^
-                    --html /mnt/locust/order-service-report.html 
+                    --html /mnt/locust/order-service-report-load.html
 
                     echo 🚀 Levantando Locust para payment-service...
 
@@ -235,7 +235,7 @@ pipeline {
                     --host http://payment-service-container:8400 ^
                     --headless -u 10 -r 2 -t 1m ^
                     --only-summary ^
-                    --html /mnt/locust/payment-service-report.html
+                    --html /mnt/locust/payment-service-report-load.html
 
                     echo 🚀 Levantando Locust para favourite-service...
 
@@ -248,7 +248,7 @@ pipeline {
                     --host http://favourite-service-container:8800 ^
                     --headless -u 10 -r 2 -t 1m ^
                     --only-summary ^
-                    --html /mnt/locust/favourite-service-report.html
+                    --html /mnt/locust/favourite-service-report-load.html
 
                     echo ✅ Pruebas completadas
                     '''
@@ -276,7 +276,7 @@ pipeline {
                     --host http://order-service-container:8300 ^
                     --headless -u 50 -r 5 -t 1m ^
                     --only-summary ^
-                    --html /mnt/locust/order-service-report.html
+                    --html /mnt/locust/order-service-report-stress.html
 
                     docker run --rm --network ecommerce-test ^
                     -v "%CD%\\locust-reports:/mnt/locust" ^
@@ -287,7 +287,7 @@ pipeline {
                     --host http://payment-service-container:8400 ^
                     --headless -u 50 -r 5 -t 1m ^
                     --only-summary ^
-                    --html /mnt/locust/payment-service-report.html
+                    --html /mnt/locust/payment-service-report-stress.html
 
                     docker run --rm --network ecommerce-test ^
                     -v "%CD%\\locust-reports:/mnt/locust" ^
@@ -298,7 +298,7 @@ pipeline {
                     --host http://favourite-service-container:8800 ^
                     --headless -u 50 -r 5 -t 1m ^
                     --only-summary ^
-                    --html /mnt/locust/favourite-service-report.html
+                    --html /mnt/locust/favourite-service-report-stress.html
 
                     echo ✅ Pruebas de estrés completadas
                     '''
