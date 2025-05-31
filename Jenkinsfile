@@ -101,7 +101,7 @@ pipeline {
         stage('Integration Tests') {
             when {
                 anyOf {
-                    branch 'dev';
+                    branch 'dev'; branch 'stage';
                     expression { env.BRANCH_NAME.startsWith('feature/') }
                 }
             }
