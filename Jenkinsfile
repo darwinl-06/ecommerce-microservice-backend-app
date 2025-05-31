@@ -366,8 +366,6 @@ pipeline {
             when { anyOf { branch 'master' } }
             steps {
                 script {
-                    echo "👻👻👻👻👻👻"
-
                     SERVICES.split().each { svc ->
                         if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
