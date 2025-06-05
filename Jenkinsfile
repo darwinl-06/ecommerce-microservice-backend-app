@@ -113,56 +113,57 @@ pipeline {
 //         }
 
          stage('Trivy Vulnerability Scan & Report') {
-                    environment{
-                        TRIVY_PATH = 'C:/ProgramData/chocolatey/bin'
-                    }
-                    steps {
-                        script {
-                            env.PATH = "${TRIVY_PATH}:${env.PATH}"
+             environment {
+                 TRIVY_PATH = 'C:/ProgramData/chocolatey/bin'
+             }
+             steps {
+                 script {
+                     env.PATH = "${TRIVY_PATH};${env.PATH}"
 
-                            def services = [
-                                'api-gateway',
-                                'cloud-config',
-                                'favourite-service',
-                                'order-service',
-                                'payment-service',
-                                'product-service',
-                                'proxy-client',
-                                'service-discovery',
-                                'shipping-service',
-                                'user-service'
-                            ]
+                     def services = [
+                         'api-gateway',
+                         'cloud-config',
+                         'favourite-service',
+                         'order-service',
+                         'payment-service',
+                         'product-service',
+                         'proxy-client',
+                         'service-discovery',
+                         'shipping-service',
+                         'user-service'
+                     ]
 
-                            bat """
-                            if not exist trivy-reports (
-                                mkdir -p trivy-reports
-                            )
-                            """
+                     bat """
+                     if not exist trivy-reports (
+                         mkdir trivy-reports
+                     )
+                     """
 
-                            services.each { service ->
-                                def reportPath = "trivy-reports/${service}.html"
+                     services.each { service ->
+                         def reportPath = "trivy-reports\\${service}.html"
 
-                                echo "🔍 Escaneando imagen ${IMAGE_TAG} con Trivy..."
-                                bat """
-                                    trivy image --format template ^
-                                    --template "C:/ProgramData/chocolatey/lib/trivy/tools/contrib/html.tpl" ^
-                                    --severity HIGH,CRITICAL ^
-                                    -o ${reportPath} ^
-                                    ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}
-                                """
-                            }
+                         echo "🔍 Escaneando imagen ${IMAGE_TAG} con Trivy para ${service}..."
+                         bat """
+                         trivy image --format template ^
+                             --template "@C:/ProgramData/chocolatey/lib/trivy/tools/contrib/html.tpl" ^
+                             --severity HIGH,CRITICAL ^
+                             -o ${reportPath} ^
+                             ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}
+                         """
+                     }
 
-                            publishHTML(target: [
-                            allowMissing: true,
-                            alwaysLinkToLastBuild: true,
-                            keepAll: true,
-                            reportDir: 'trivy-reports',
-                            reportFiles: '*.html',
-                            reportName: 'Trivy Scan Report'
-                            ])
-                        }
-                    }
-                }
+                     publishHTML(target: [
+                         allowMissing: true,
+                         alwaysLinkToLastBuild: true,
+                         keepAll: true,
+                         reportDir: 'trivy-reports',
+                         reportFiles: '*.html',
+                         reportName: 'Trivy Scan Report'
+                     ])
+                 }
+             }
+         }
+
 
 
 //         stage('Build & Push Docker Images') {
