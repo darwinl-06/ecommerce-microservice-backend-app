@@ -93,7 +93,7 @@ pipeline {
                     withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
                         javaServices.each { service ->
                             dir(service) {
-                                sh "${scannerHome}/bin/sonar-scanner " +
+                                bat "${scannerHome}/bin/sonar-scanner " +
                                 "-Dsonar.projectKey=${service} " +
                                 "-Dsonar.projectName=${service} " +
                                 '-Dsonar.sources=src ' +
@@ -102,7 +102,7 @@ pipeline {
                         }
 
                         dir('locust') {
-                            sh "${scannerHome}/bin/sonar-scanner " +
+                            bat "${scannerHome}/bin/sonar-scanner " +
                             '-Dsonar.projectKey=locust ' +
                             '-Dsonar.projectName=locust ' +
                             '-Dsonar.sources=test'
