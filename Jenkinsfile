@@ -118,7 +118,6 @@ pipeline {
                     }
                     steps {
                         script {
-        //                     def trivyPathBin = "/opt/homebrew/bin/trivy"
                             env.PATH = "${TRIVY_PATH}:${env.PATH}"
 
                             def services = [
@@ -134,7 +133,6 @@ pipeline {
                                 'user-service'
                             ]
 
-        //                     def outputDir = 'trivy-reports'
                             bat """
                             if not exist trivy-reports (
                                 mkdir -p trivy-reports
@@ -142,13 +140,12 @@ pipeline {
                             """
 
                             services.each { service ->
-        //                         def imageTag = "jacoboossag/${service}:prod"
                                 def reportPath = "trivy-reports/${service}.html"
 
-        //                         echo "🔍 Escaneando imagen ${imageTag} con Trivy..."
+                                echo "🔍 Escaneando imagen ${imageTag} con Trivy..."
                                 bat """
                                     trivy image --format template ^
-                                    --template "@/opt/homebrew/Cellar/trivy/0.63.0/share/trivy/templates/html.tpl" ^
+                                    --template "C:/ProgramData/chocolatey/lib/trivy/tools/contrib/html.tpl" ^
                                     --severity HIGH,CRITICAL ^
                                     -o ${reportPath} ^
                                     ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}
