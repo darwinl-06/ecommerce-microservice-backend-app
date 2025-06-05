@@ -65,6 +65,53 @@ pipeline {
             }
         }
 
+        stage('Run SonarQube Analysis') {
+            tools {
+                jdk 'JDK_20'
+            }
+            environment {
+                JAVA_HOME = tool 'JDK_20'
+                PATH = "${JAVA_HOME}/bin:${env.PATH}"
+                scannerHome = tool 'SonarQubeOtraCosa'
+            }
+            steps {
+                script {
+                    def javaServices = [
+                        'api-gateway',
+                        'cloud-config',
+                        'favourite-service',
+                        'order-service',
+                        'payment-service',
+                        'product-service',
+                        'proxy-client',
+                        'service-discovery',
+                        'shipping-service',
+                        'user-service',
+                        'e2e-tests'
+                    ]
+
+                    withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
+                        javaServices.each { service ->
+                            dir(service) {
+                                sh "${scannerHome}/bin/sonar-scanner " +
+                                "-Dsonar.projectKey=${service} " +
+                                "-Dsonar.projectName=${service} " +
+                                '-Dsonar.sources=src ' +
+                                '-Dsonar.java.binaries=target/classes'
+                            }
+                        }
+
+                        dir('locust') {
+                            sh "${scannerHome}/bin/sonar-scanner " +
+                            '-Dsonar.projectKey=locust ' +
+                            '-Dsonar.projectName=locust ' +
+                            '-Dsonar.sources=test'
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Build & Push Docker Images') {
             when { anyOf { branch 'stage'; branch 'master' } }
             steps {
@@ -344,39 +391,39 @@ pipeline {
             }
         }        
         
-        stage('Deploy Core Services') {
-            when { anyOf { branch 'master' } }
-            steps {
-                bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
-                bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=300s"
+        // stage('Deploy Core Services') {
+        //     when { anyOf { branch 'master' } }
+        //     steps {
+        //         bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
+        //         bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=300s"
 
-                bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
-                bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=300s"
+        //         bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
+        //         bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+        //         bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+        //         bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=300s"
 
-                bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
-                bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
-            }
-        }
+        //         bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
+        //         bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+        //         bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+        //         bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
+        //     }
+        // }
 
-        stage('Deploy Microservices') {
-            when { anyOf { branch 'master' } }
-            steps {
-                script {
-                    SERVICES.split().each { svc ->
-                        if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
-                            bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-                            bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                            bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                            bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-                        }
-                    }
-                }
-            }
-        }
+        // stage('Deploy Microservices') {
+        //     when { anyOf { branch 'master' } }
+        //     steps {
+        //         script {
+        //             SERVICES.split().each { svc ->
+        //                 if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
+        //                     bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+        //                     bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+        //                     bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+        //                     bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         
         stage('Generate and Archive Release Notes') {
