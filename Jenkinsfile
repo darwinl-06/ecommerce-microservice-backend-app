@@ -65,52 +65,52 @@ pipeline {
             }
         }
 
-        stage('Run SonarQube Analysis') {
-            tools {
-                jdk 'JDK_20'
-            }
-            environment {
-                JAVA_HOME = tool 'JDK_20'
-                PATH = "${JAVA_HOME}/bin:${env.PATH}"
-                scannerHome = tool 'SonarQubeOtraCosa'
-            }
-            steps {
-                script {
-                    def javaServices = [
-                        'api-gateway',
-                        'cloud-config',
-                        'favourite-service',
-                        'order-service',
-                        'payment-service',
-                        'product-service',
-                        'proxy-client',
-                        'service-discovery',
-                        'shipping-service',
-                        'user-service',
-                        'e2e-tests'
-                    ]
-
-                    withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
-                        javaServices.each { service ->
-                            dir(service) {
-                                bat "${scannerHome}/bin/sonar-scanner " +
-                                "-Dsonar.projectKey=${service} " +
-                                "-Dsonar.projectName=${service} " +
-                                '-Dsonar.sources=src ' +
-                                '-Dsonar.java.binaries=target/classes'
-                            }
-                        }
-
-                        dir('locust') {
-                            bat "${scannerHome}/bin/sonar-scanner " +
-                            '-Dsonar.projectKey=locust ' +
-                            '-Dsonar.projectName=locust ' +
-                            '-Dsonar.sources=test'
-                        }
-                    }
-                }
-            }
-        }
+//         stage('Run SonarQube Analysis') {
+//             tools {
+//                 jdk 'JDK_20'
+//             }
+//             environment {
+//                 JAVA_HOME = tool 'JDK_20'
+//                 PATH = "${JAVA_HOME}/bin:${env.PATH}"
+//                 scannerHome = tool 'SonarQubeOtraCosa'
+//             }
+//             steps {
+//                 script {
+//                     def javaServices = [
+//                         'api-gateway',
+//                         'cloud-config',
+//                         'favourite-service',
+//                         'order-service',
+//                         'payment-service',
+//                         'product-service',
+//                         'proxy-client',
+//                         'service-discovery',
+//                         'shipping-service',
+//                         'user-service',
+//                         'e2e-tests'
+//                     ]
+//
+//                     withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
+//                         javaServices.each { service ->
+//                             dir(service) {
+//                                 bat "${scannerHome}/bin/sonar-scanner " +
+//                                 "-Dsonar.projectKey=${service} " +
+//                                 "-Dsonar.projectName=${service} " +
+//                                 '-Dsonar.sources=src ' +
+//                                 '-Dsonar.java.binaries=target/classes'
+//                             }
+//                         }
+//
+//                         dir('locust') {
+//                             bat "${scannerHome}/bin/sonar-scanner " +
+//                             '-Dsonar.projectKey=locust ' +
+//                             '-Dsonar.projectName=locust ' +
+//                             '-Dsonar.sources=test'
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
          stage('Trivy Vulnerability Scan & Report') {
                     environment{
@@ -143,10 +143,10 @@ pipeline {
 
         //                         echo "🔍 Escaneando imagen ${imageTag} con Trivy..."
                                 bat """
-                                    trivy image --format template \\
-                                    --template "@/opt/homebrew/Cellar/trivy/0.63.0/share/trivy/templates/html.tpl" \\
-                                    --severity HIGH,CRITICAL \\
-                                    -o ${reportPath} \\
+                                    trivy image --format template ^
+                                    --template "@/opt/homebrew/Cellar/trivy/0.63.0/share/trivy/templates/html.tpl" ^
+                                    --severity HIGH,CRITICAL ^
+                                    -o ${reportPath} ^
                                     ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}
                                 """
                             }
