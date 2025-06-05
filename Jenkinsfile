@@ -142,7 +142,7 @@ pipeline {
                             services.each { service ->
                                 def reportPath = "trivy-reports/${service}.html"
 
-                                echo "🔍 Escaneando imagen ${imageTag} con Trivy..."
+                                echo "🔍 Escaneando imagen ${IMAGE_TAG} con Trivy..."
                                 bat """
                                     trivy image --format template ^
                                     --template "C:/ProgramData/chocolatey/lib/trivy/tools/contrib/html.tpl" ^
