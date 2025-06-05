@@ -135,10 +135,11 @@ pipeline {
                             ]
 
         //                     def outputDir = 'trivy-reports'
-
+                            bat """
                             if not exist trivy-reports (
-                                bat "mkdir -p trivy-reports"
+                                mkdir -p trivy-reports
                             )
+                            """
 
                             services.each { service ->
         //                         def imageTag = "jacoboossag/${service}:prod"
