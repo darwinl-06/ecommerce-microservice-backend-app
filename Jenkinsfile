@@ -112,21 +112,73 @@ pipeline {
             }
         }
 
-        stage('Build & Push Docker Images') {
-            when { anyOf { branch 'stage'; branch 'master' } }
-            steps {
-                withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
-                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+         stage('Trivy Vulnerability Scan & Report') {
+                    environment{
+                        TRIVY_PATH = 'C:/ProgramData/chocolatey/bin'
+                    }
+                    steps {
+                        script {
+        //                     def trivyPathBin = "/opt/homebrew/bin/trivy"
+                            env.PATH = "${TRIVY_PATH}:${env.PATH}"
 
-                    script {
-                        SERVICES.split().each { service ->
-                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
-                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
+                            def services = [
+                                'api-gateway',
+                                'cloud-config',
+                                'favourite-service',
+                                'order-service',
+                                'payment-service',
+                                'product-service',
+                                'proxy-client',
+                                'service-discovery',
+                                'shipping-service',
+                                'user-service'
+                            ]
+
+        //                     def outputDir = 'trivy-reports'
+                            bat "mkdir -p trivy-reports"
+
+                            services.each { service ->
+        //                         def imageTag = "jacoboossag/${service}:prod"
+                                def reportPath = "trivy-reports/${service}.html"
+
+        //                         echo "🔍 Escaneando imagen ${imageTag} con Trivy..."
+                                bat """
+                                    trivy image --format template \\
+                                    --template "@/opt/homebrew/Cellar/trivy/0.63.0/share/trivy/templates/html.tpl" \\
+                                    --severity HIGH,CRITICAL \\
+                                    -o ${reportPath} \\
+                                    ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}
+                                """
+                            }
+
+                            publishHTML(target: [
+                            allowMissing: true,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: 'trivy-reports',
+                            reportFiles: '*.html',
+                            reportName: 'Trivy Scan Report'
+                            ])
                         }
                     }
                 }
-            }
-        }
+
+
+//         stage('Build & Push Docker Images') {
+//             when { anyOf { branch 'stage'; branch 'master' } }
+//             steps {
+//                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
+//                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+//
+//                     script {
+//                         SERVICES.split().each { service ->
+//                             bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
+//                             bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
         stage('Unit Tests') {
             when {
@@ -384,12 +436,12 @@ pipeline {
             }
         }
         
-        stage('Deploy Common Config') {
-            when { anyOf { branch 'master' } }
-            steps {
-                bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
-            }
-        }        
+//         stage('Deploy Common Config') {
+//             when { anyOf { branch 'master' } }
+//             steps {
+//                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
+//             }
+//         }
         
         // stage('Deploy Core Services') {
         //     when { anyOf { branch 'master' } }
