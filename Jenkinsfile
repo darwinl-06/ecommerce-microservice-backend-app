@@ -11,6 +11,8 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'huevos'
         SERVICES = 'service-discovery cloud-config api-gateway product-service user-service order-service payment-service shipping-service favourite-service proxy-client locust'
         K8S_NAMESPACE = 'ecommerce'
+        PATH = "C:\\Program Files (x86)\\Google\\Cloud SDK\\google-cloud-sdk\\bin;${env.PATH}"
+
     }
 
     stages {
@@ -36,7 +38,7 @@ pipeline {
             }
         }
 
-        stage('Ensure Namespace') {
+        stage('Ensure GCLOUD CLI') {
             steps {
                 bat "gcloud --version"
             }
