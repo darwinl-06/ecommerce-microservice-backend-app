@@ -4,6 +4,10 @@ metadata:
   name: user-service
   labels:
     app: user-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/user-service/actuator/prometheus"
+    prometheus.io/port: "8700"
 spec:
   selector:
     app: user-service

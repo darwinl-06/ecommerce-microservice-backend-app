@@ -4,6 +4,10 @@ metadata:
   name: service-discovery
   labels:
     app: service-discovery
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/actuator/prometheus"
+    prometheus.io/port: "8761"
 spec:
   selector:
     app: service-discovery

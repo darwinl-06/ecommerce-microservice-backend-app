@@ -37,11 +37,11 @@ pipeline {
         }
 
 
-//         stage('Ensure Namespace') {
-//             steps {
-//                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
-//             }
-//         }
+        stage('Ensure Namespace') {
+            steps {
+                bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
+            }
+        }
 
         stage('Checkout') {
             steps {
@@ -112,75 +112,75 @@ pipeline {
 //             }
 //         }
 
-         stage('Trivy Vulnerability Scan & Report') {
-             environment {
-                 TRIVY_PATH = 'C:/ProgramData/chocolatey/bin'
-             }
-             steps {
-                 script {
-                     env.PATH = "${TRIVY_PATH};${env.PATH}"
-
-                     def services = [
-                         'api-gateway',
-                         'cloud-config',
-                         'favourite-service',
-                         'order-service',
-                         'payment-service',
-                         'product-service',
-                         'proxy-client',
-                         'service-discovery',
-                         'shipping-service',
-                         'user-service'
-                     ]
-
-                     bat """
-                     if not exist trivy-reports (
-                         mkdir trivy-reports
-                     )
-                     """
-
-                     services.each { service ->
-                         def reportPath = "trivy-reports\\${service}.html"
-
-                         echo "🔍 Escaneando imagen ${IMAGE_TAG} con Trivy para ${service}..."
-                         bat """
-                         trivy image --format template ^
-                             --template "@C:/ProgramData/chocolatey/lib/trivy/tools/contrib/html.tpl" ^
-                             --severity HIGH,CRITICAL ^
-                             -o ${reportPath} ^
-                             ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}
-                         """
-                     }
-
-                     publishHTML(target: [
-                         allowMissing: true,
-                         alwaysLinkToLastBuild: true,
-                         keepAll: true,
-                         reportDir: 'trivy-reports',
-                         reportFiles: '*.html',
-                         reportName: 'Trivy Scan Report'
-                     ])
-                 }
-             }
-         }
-
-
-
-//         stage('Build & Push Docker Images') {
-//             when { anyOf { branch 'stage'; branch 'master' } }
-//             steps {
-//                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
-//                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+//          stage('Trivy Vulnerability Scan & Report') {
+//              environment {
+//                  TRIVY_PATH = 'C:/ProgramData/chocolatey/bin'
+//              }
+//              steps {
+//                  script {
+//                      env.PATH = "${TRIVY_PATH};${env.PATH}"
 //
-//                     script {
-//                         SERVICES.split().each { service ->
-//                             bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
-//                             bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
-//                         }
-//                     }
-//                 }
-//             }
-//         }
+//                      def services = [
+//                          'api-gateway',
+//                          'cloud-config',
+//                          'favourite-service',
+//                          'order-service',
+//                          'payment-service',
+//                          'product-service',
+//                          'proxy-client',
+//                          'service-discovery',
+//                          'shipping-service',
+//                          'user-service'
+//                      ]
+//
+//                      bat """
+//                      if not exist trivy-reports (
+//                          mkdir trivy-reports
+//                      )
+//                      """
+//
+//                      services.each { service ->
+//                          def reportPath = "trivy-reports\\${service}.html"
+//
+//                          echo "🔍 Escaneando imagen ${IMAGE_TAG} con Trivy para ${service}..."
+//                          bat """
+//                          trivy image --format template ^
+//                              --template "@C:/ProgramData/chocolatey/lib/trivy/tools/contrib/html.tpl" ^
+//                              --severity HIGH,CRITICAL ^
+//                              -o ${reportPath} ^
+//                              ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}
+//                          """
+//                      }
+//
+//                      publishHTML(target: [
+//                          allowMissing: true,
+//                          alwaysLinkToLastBuild: true,
+//                          keepAll: true,
+//                          reportDir: 'trivy-reports',
+//                          reportFiles: '*.html',
+//                          reportName: 'Trivy Scan Report'
+//                      ])
+//                  }
+//              }
+//          }
+
+
+
+        stage('Build & Push Docker Images') {
+            when { anyOf { branch 'stage'; branch 'master' } }
+            steps {
+                withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
+                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+
+                    script {
+                        SERVICES.split().each { service ->
+                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
+                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Unit Tests') {
             when {
@@ -438,49 +438,49 @@ pipeline {
             }
         }
 
-        stage('Waiting approval for deployment') {
-            when { branch 'master' }
-            steps {
-                script {
-                    emailext(
-                        to: '$DEFAULT_RECIPIENTS',
-                        subject: "Action Required: Approval Needed for Deploy of Build #${env.BUILD_NUMBER}",
-                        body: """\
-                        The build #${env.BUILD_NUMBER} for branch *${env.BRANCH_NAME}* has completed and is pending approval for deployment.
-                        Please review the changes and approve or abort
-                        You can access the build details here:
-                        ${env.BUILD_URL}
-                        """
-                    )
-                    input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
-                }
-            }
-        }
-        
-//         stage('Deploy Common Config') {
-//             when { anyOf { branch 'master' } }
+//         stage('Waiting approval for deployment') {
+//             when { branch 'master' }
 //             steps {
-//                 bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
+//                 script {
+//                     emailext(
+//                         to: '$DEFAULT_RECIPIENTS',
+//                         subject: "Action Required: Approval Needed for Deploy of Build #${env.BUILD_NUMBER}",
+//                         body: """\
+//                         The build #${env.BUILD_NUMBER} for branch *${env.BRANCH_NAME}* has completed and is pending approval for deployment.
+//                         Please review the changes and approve or abort
+//                         You can access the build details here:
+//                         ${env.BUILD_URL}
+//                         """
+//                     )
+//                     input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
+//                 }
 //             }
 //         }
         
-        // stage('Deploy Core Services') {
-        //     when { anyOf { branch 'master' } }
-        //     steps {
-        //         bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
-        //         bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=300s"
+        stage('Deploy Common Config') {
+            when { anyOf { branch 'master' } }
+            steps {
+                bat "kubectl apply -f k8s\\common-config.yaml -n ${K8S_NAMESPACE}"
+            }
+        }
+        
+        stage('Deploy Core Services') {
+            when { anyOf { branch 'master' } }
+            steps {
+                bat "kubectl apply -f k8s\\zipkin -n ${K8S_NAMESPACE}"
+                bat "kubectl rollout status deployment/zipkin -n ${K8S_NAMESPACE} --timeout=300s"
 
-        //         bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
-        //         bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-        //         bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-        //         bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=300s"
+                bat "kubectl apply -f k8s\\service-discovery -n ${K8S_NAMESPACE}"
+                bat "kubectl set image deployment/service-discovery service-discovery=${DOCKERHUB_USER}/service-discovery:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                bat "kubectl set env deployment/service-discovery SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+                bat "kubectl rollout status deployment/service-discovery -n ${K8S_NAMESPACE} --timeout=300s"
 
-        //         bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
-        //         bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-        //         bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-        //         bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
-        //     }
-        // }
+                bat "kubectl apply -f k8s\\cloud-config -n ${K8S_NAMESPACE}"
+                bat "kubectl set image deployment/cloud-config cloud-config=${DOCKERHUB_USER}/cloud-config:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                bat "kubectl set env deployment/cloud-config SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+                bat "kubectl rollout status deployment/cloud-config -n ${K8S_NAMESPACE} --timeout=300s"
+            }
+        }
 
         // stage('Deploy Microservices') {
         //     when { anyOf { branch 'master' } }
@@ -498,20 +498,34 @@ pipeline {
         //     }
         // }
 
+//         stage('Install Observability') {
+//             when { anyOf { branch 'master' } }
+//             steps {
+//                 bat '''
+//                 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+//                 helm repo update
+//                 helm upgrade --install monitoring prometheus-community/kube-prometheus-stack ^
+//                   --namespace monitoring ^
+//                   --create-namespace ^
+//                   --wait
+//                 '''
+//             }
+//         }
+
         
-        stage('Generate and Archive Release Notes') {
-            when {
-                branch 'master'
-            }
-            steps {
-                bat '''
-                echo "📝 Generando Release Notes con convco..."
-                convco changelog > RELEASE_NOTES.md
-                '''
-                archiveArtifacts artifacts: 'RELEASE_NOTES.md', fingerprint: true
-            }
-        }
-    }
+//         stage('Generate and Archive Release Notes') {
+//             when {
+//                 branch 'master'
+//             }
+//             steps {
+//                 bat '''
+//                 echo "📝 Generando Release Notes con convco..."
+//                 convco changelog > RELEASE_NOTES.md
+//                 '''
+//                 archiveArtifacts artifacts: 'RELEASE_NOTES.md', fingerprint: true
+//             }
+//         }
+//     }
 
     post {
         success {

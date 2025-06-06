@@ -4,6 +4,10 @@ metadata:
   name: payment-service
   labels:
     app: payment-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/actuator/prometheus"
+    prometheus.io/port: "8400"
 spec:
   selector:
     app: payment-service # Debe coincidir con las etiquetas del Pod del Deployment
