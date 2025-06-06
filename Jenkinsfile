@@ -525,7 +525,7 @@ pipeline {
 //                 archiveArtifacts artifacts: 'RELEASE_NOTES.md', fingerprint: true
 //             }
 //         }
-//     }
+    }
 
     post {
         success {
