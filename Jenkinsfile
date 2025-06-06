@@ -37,11 +37,11 @@ pipeline {
         }
 
 
-        // stage('Ensure Namespace') {
-        //     steps {
-        //         bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
-        //     }
-        // }
+        stage('Ensure Namespace') {
+            steps {
+                bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
+            }
+        }
 
         stage('Checkout') {
             steps {
@@ -511,6 +511,12 @@ pipeline {
         }
         failure {
             echo "❌ Falló pipeline en ${env.BRANCH_NAME}. Ver logs."
+            emailext(
+                attachLog: true,
+                body: '$DEFAULT_CONTENT',
+                subject: '$DEFAULT_SUBJECT',
+                to: '$DEFAULT_RECIPIENTS',
+            )
         }
         unstable {
             echo "⚠️ Finalizó con advertencias en ${env.BRANCH_NAME}"
