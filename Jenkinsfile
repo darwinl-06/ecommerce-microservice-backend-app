@@ -74,104 +74,106 @@ pipeline {
             }
         }
 
-//         stage('Run SonarQube Analysis') {
-//             tools {
-//                 jdk 'JDK_20'
-//             }
-//             environment {
-//                 JAVA_HOME = tool 'JDK_20'
-//                 PATH = "${JAVA_HOME}/bin:${env.PATH}"
-//                 scannerHome = tool 'SonarQubeOtraCosa'
-//             }
-//             steps {
-//                 script {
-//                     def javaServices = [
-//                         'api-gateway',
-//                         'cloud-config',
-//                         'favourite-service',
-//                         'order-service',
-//                         'payment-service',
-//                         'product-service',
-//                         'proxy-client',
-//                         'service-discovery',
-//                         'shipping-service',
-//                         'user-service',
-//                         'e2e-tests'
-//                     ]
-//
-//                     withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
-//                         javaServices.each { service ->
-//                             dir(service) {
-//                                 bat "${scannerHome}/bin/sonar-scanner " +
-//                                 "-Dsonar.projectKey=${service} " +
-//                                 "-Dsonar.projectName=${service} " +
-//                                 '-Dsonar.sources=src ' +
-//                                 '-Dsonar.java.binaries=target/classes'
-//                             }
-//                         }
-//
-//                         dir('locust') {
-//                             bat "${scannerHome}/bin/sonar-scanner " +
-//                             '-Dsonar.projectKey=locust ' +
-//                             '-Dsonar.projectName=locust ' +
-//                             '-Dsonar.sources=test'
-//                         }
-//                     }
-//                 }
-//             }
-//         }
+        stage('Run SonarQube Analysis') {
+            when { branch 'master' }
+            tools {
+                jdk 'JDK_20'
+            }
+            environment {
+                JAVA_HOME = tool 'JDK_20'
+                PATH = "${JAVA_HOME}/bin:${env.PATH}"
+                scannerHome = tool 'SonarQubeOtraCosa'
+            }
+            steps {
+                script {
+                    def javaServices = [
+                        'api-gateway',
+                        'cloud-config',
+                        'favourite-service',
+                        'order-service',
+                        'payment-service',
+                        'product-service',
+                        'proxy-client',
+                        'service-discovery',
+                        'shipping-service',
+                        'user-service',
+                        'e2e-tests'
+                    ]
 
-//          stage('Trivy Vulnerability Scan & Report') {
-//              environment {
-//                  TRIVY_PATH = 'C:/ProgramData/chocolatey/bin'
-//              }
-//              steps {
-//                  script {
-//                      env.PATH = "${TRIVY_PATH};${env.PATH}"
-//
-//                      def services = [
-//                          'api-gateway',
-//                          'cloud-config',
-//                          'favourite-service',
-//                          'order-service',
-//                          'payment-service',
-//                          'product-service',
-//                          'proxy-client',
-//                          'service-discovery',
-//                          'shipping-service',
-//                          'user-service'
-//                      ]
-//
-//                      bat """
-//                      if not exist trivy-reports (
-//                          mkdir trivy-reports
-//                      )
-//                      """
-//
-//                      services.each { service ->
-//                          def reportPath = "trivy-reports\\${service}.html"
-//
-//                          echo "🔍 Escaneando imagen ${IMAGE_TAG} con Trivy para ${service}..."
-//                          bat """
-//                          trivy image --format template ^
-//                              --template "@C:/ProgramData/chocolatey/lib/trivy/tools/contrib/html.tpl" ^
-//                              --severity HIGH,CRITICAL ^
-//                              -o ${reportPath} ^
-//                              ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}
-//                          """
-//                      }
-//
-//                      publishHTML(target: [
-//                          allowMissing: true,
-//                          alwaysLinkToLastBuild: true,
-//                          keepAll: true,
-//                          reportDir: 'trivy-reports',
-//                          reportFiles: '*.html',
-//                          reportName: 'Trivy Scan Report'
-//                      ])
-//                  }
-//              }
-//          }
+                    withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
+                        javaServices.each { service ->
+                            dir(service) {
+                                bat "${scannerHome}/bin/sonar-scanner " +
+                                "-Dsonar.projectKey=${service} " +
+                                "-Dsonar.projectName=${service} " +
+                                '-Dsonar.sources=src ' +
+                                '-Dsonar.java.binaries=target/classes'
+                            }
+                        }
+
+                        dir('locust') {
+                            bat "${scannerHome}/bin/sonar-scanner " +
+                            '-Dsonar.projectKey=locust ' +
+                            '-Dsonar.projectName=locust ' +
+                            '-Dsonar.sources=test'
+                        }
+                    }
+                }
+            }
+        }
+
+         stage('Trivy Vulnerability Scan & Report') {
+             when { branch 'stage' }
+             environment {
+                 TRIVY_PATH = 'C:/ProgramData/chocolatey/bin'
+             }
+             steps {
+                 script {
+                     env.PATH = "${TRIVY_PATH};${env.PATH}"
+
+                     def services = [
+                         'api-gateway',
+                         'cloud-config',
+                         'favourite-service',
+                         'order-service',
+                         'payment-service',
+                         'product-service',
+                         'proxy-client',
+                         'service-discovery',
+                         'shipping-service',
+                         'user-service'
+                     ]
+
+                     bat """
+                     if not exist trivy-reports (
+                         mkdir trivy-reports
+                     )
+                     """
+
+                     services.each { service ->
+                         def reportPath = "trivy-reports\\${service}.html"
+
+                         echo "🔍 Escaneando imagen ${IMAGE_TAG} con Trivy para ${service}..."
+                         bat """
+                         trivy image --format template ^
+                             --template "@C:/ProgramData/chocolatey/lib/trivy/tools/contrib/html.tpl" ^
+                             --severity HIGH,CRITICAL ^
+                             -o ${reportPath} ^
+                             ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}
+                         """
+                     }
+
+                     publishHTML(target: [
+                         allowMissing: true,
+                         alwaysLinkToLastBuild: true,
+                         keepAll: true,
+                         reportDir: 'trivy-reports',
+                         reportFiles: '*.html',
+                         reportName: 'Trivy Scan Report'
+                     ])
+                 }
+             }
+         }
 
 
 
@@ -447,24 +449,24 @@ pipeline {
             }
         }
 
-//         stage('Waiting approval for deployment') {
-//             when { branch 'master' }
-//             steps {
-//                 script {
-//                     emailext(
-//                         to: '$DEFAULT_RECIPIENTS',
-//                         subject: "Action Required: Approval Needed for Deploy of Build #${env.BUILD_NUMBER}",
-//                         body: """\
-//                         The build #${env.BUILD_NUMBER} for branch *${env.BRANCH_NAME}* has completed and is pending approval for deployment.
-//                         Please review the changes and approve or abort
-//                         You can access the build details here:
-//                         ${env.BUILD_URL}
-//                         """
-//                     )
-//                     input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
-//                 }
-//             }
-//         }
+        stage('Waiting approval for deployment') {
+            when { branch 'master' }
+            steps {
+                script {
+                    emailext(
+                        to: '$DEFAULT_RECIPIENTS',
+                        subject: "Action Required: Approval Needed for Deploy of Build #${env.BUILD_NUMBER}",
+                        body: """\
+                        The build #${env.BUILD_NUMBER} for branch *${env.BRANCH_NAME}* has completed and is pending approval for deployment.
+                        Please review the changes and approve or abort
+                        You can access the build details here:
+                        ${env.BUILD_URL}
+                        """
+                    )
+                    input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
+                }
+            }
+        }
         
         stage('Deploy Common Config') {
             when { anyOf { branch 'master' } }
@@ -491,49 +493,51 @@ pipeline {
             }
         }
 
-        // stage('Deploy Microservices') {
-        //     when { anyOf { branch 'master' } }
-        //     steps {
-        //         script {
-        //             SERVICES.split().each { svc ->
-        //                 if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
-        //                     bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-        //                     bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-        //                     bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-        //                     bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Deploy Microservices') {
+            when { anyOf { branch 'master' } }
+            steps {
+                script {
+                    SERVICES.split().each { svc ->
+                        if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
+                            bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+                            bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+                        }
+                    }
+                }
+            }
+        }
 
-//         stage('Install Observability') {
-//             when { anyOf { branch 'master' } }
-//             steps {
-//                 bat '''
-//                 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-//                 helm repo update
-//                 helm upgrade --install monitoring prometheus-community/kube-prometheus-stack ^
-//                   --namespace monitoring ^
-//                   --create-namespace ^
-//                   --wait
-//                 '''
-//             }
-//         }
+        stage('Install Observability') {
+            when { anyOf { branch 'master' } }
+            steps {
+                bat '''
+                helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                helm repo update
+                helm upgrade --install monitoring prometheus-community/kube-prometheus-stack `
+                     --namespace monitoring `
+                     --create-namespace `
+                     --set grafana.adminUser=admin `
+                     --set grafana.adminPassword=admin123 `
+                     --wait
+                '''
+            }
+        }
 
         
-//         stage('Generate and Archive Release Notes') {
-//             when {
-//                 branch 'master'
-//             }
-//             steps {
-//                 bat '''
-//                 echo "📝 Generando Release Notes con convco..."
-//                 convco changelog > RELEASE_NOTES.md
-//                 '''
-//                 archiveArtifacts artifacts: 'RELEASE_NOTES.md', fingerprint: true
-//             }
-//         }
+        stage('Generate and Archive Release Notes') {
+            when {
+                branch 'master'
+            }
+            steps {
+                bat '''
+                echo "📝 Generando Release Notes con convco..."
+                convco changelog > RELEASE_NOTES.md
+                '''
+                archiveArtifacts artifacts: 'RELEASE_NOTES.md', fingerprint: true
+            }
+        }
     }
 
     post {
