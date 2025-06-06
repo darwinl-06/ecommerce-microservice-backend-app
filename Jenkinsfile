@@ -37,11 +37,11 @@ pipeline {
         }
 
 
-        stage('Ensure Namespace') {
-            steps {
-                bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
-            }
-        }
+//         stage('Ensure Namespace') {
+//             steps {
+//                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
+//             }
+//         }
 
         stage('Checkout') {
             steps {
