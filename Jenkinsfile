@@ -38,13 +38,13 @@ pipeline {
             }
         }
 
-        stages {
-            stage('Ver PATH') {
-                steps {
-                    bat 'echo %PATH%'
-                }
+
+        stage('Ver PATH') {
+            steps {
+                bat 'echo %PATH%'
             }
         }
+
 
         stage('Ensure Namespace') {
             steps {
