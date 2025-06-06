@@ -437,6 +437,25 @@ pipeline {
                 }
             }
         }
+
+        stage('Waiting approval for deployment') {
+            when { branch 'master' }
+            steps {
+                script {
+                    emailext(
+                        to: '$DEFAULT_RECIPIENTS',
+                        subject: "Action Required: Approval Needed for Deploy of Build #${env.BUILD_NUMBER}",
+                        body: """\
+                        The build #${env.BUILD_NUMBER} for branch *${env.BRANCH_NAME}* has completed and is pending approval for deployment.
+                        Please review the changes and approve or abort
+                        You can access the build details here:
+                        ${env.BUILD_URL}
+                        """
+                    )
+                    input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
+                }
+            }
+        }
         
 //         stage('Deploy Common Config') {
 //             when { anyOf { branch 'master' } }
