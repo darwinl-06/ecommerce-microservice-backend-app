@@ -137,6 +137,7 @@ persistence:
 # Service account
 serviceAccount:
   create: true
+  name: kibana
 
 # Pod annotations
 podAnnotations:
