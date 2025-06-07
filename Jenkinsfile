@@ -54,7 +54,7 @@ pipeline {
         stage('Get GKE Credentials') {
             steps {
                 script {
-                    def clusterName = "ecommerce-cluster-${env.SPRING_PROFILES_ACTIV}"
+                    def clusterName = "ecommerce-cluster-${env.SPRING_PROFILES_ACTIVE}"
                     bat """
                     echo 🔐 Obteniendo credenciales del cluster GKE...
                     gcloud container clusters get-credentials ${clusterName} --zone us-central1 --project ${env.TF_VAR_project_id}
