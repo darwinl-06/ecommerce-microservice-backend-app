@@ -413,8 +413,6 @@ pipeline {
             }
         }
 
-
-
         stage('Detener y eliminar contenedores') {
             when {
                 anyOf {
@@ -530,38 +528,21 @@ pipeline {
             }
         }
 
-        stage('Deploy Microservices') {
-            when { anyOf { branch 'master' } }
-            steps {
-                script {
-                    SERVICES.split().each { svc ->
-                        if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
-                            bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-                            bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-                            bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-                            bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Install Observability') {
-            when { anyOf { branch 'master' } }
-            steps {
-                bat '''
-                helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-                helm repo update
-                helm upgrade --install monitoring prometheus-community/kube-prometheus-stack `
-                     --namespace monitoring `
-                     --create-namespace `
-                     --set grafana.adminUser=admin `
-                     --set grafana.adminPassword=admin123 `
-                     --wait
-                '''
-            }
-        }
-
+//         stage('Deploy Microservices') {
+//             when { anyOf { branch 'master' } }
+//             steps {
+//                 script {
+//                     SERVICES.split().each { svc ->
+//                         if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
+//                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+//                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+//                         }
+//                     }
+//                 }
+//             }
+//         }
         
         stage('Generate and Archive Release Notes') {
             when {
