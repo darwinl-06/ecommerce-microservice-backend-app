@@ -42,6 +42,8 @@ pipeline {
         stage('Ensure Namespace') {
             steps {
                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
+                bat "kubectl get namespace monitoring || kubectl create namespace monitoring"
+                bat "kubectl get namespace logging || kubectl create namespace logging"
             }
         }
 
