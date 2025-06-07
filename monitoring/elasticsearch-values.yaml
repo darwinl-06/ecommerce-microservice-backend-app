@@ -12,11 +12,11 @@ minimumMasterNodes: 1
 # Resource configuration for testing environment
 resources:
   requests:
-    cpu: "500m"
-    memory: "1Gi"
+    cpu: "300m"
+    memory: "512Mi"
   limits:
     cpu: "1000m"
-    memory: "2Gi"
+    memory: "1Gi"
 
 # JVM heap size (should be 50% of memory limit)
 esJavaOpts: "-Xmx1g -Xms1g"
