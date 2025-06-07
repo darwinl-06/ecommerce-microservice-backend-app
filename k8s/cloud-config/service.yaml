@@ -4,10 +4,6 @@ metadata:
   name: cloud-config
   labels:
     app: cloud-config
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/path: "/actuator/prometheus"
-    prometheus.io/port: "9296"
 spec:
   selector:
     app: cloud-config

@@ -4,10 +4,6 @@ metadata:
   name: favourite-service
   labels:
     app: favourite-service
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/path: "/actuator/prometheus"
-    prometheus.io/port: "8800"
 spec:
   type: ClusterIP
   ports:

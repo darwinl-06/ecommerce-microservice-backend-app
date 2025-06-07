@@ -4,10 +4,6 @@ metadata:
   name: order-service
   labels:
     app: order-service
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/path: "/actuator/prometheus"
-    prometheus.io/port: "8300"
 spec:
   type: ClusterIP
   ports:

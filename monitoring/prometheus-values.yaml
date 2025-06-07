@@ -86,14 +86,15 @@ server:
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: kubernetes_pod_name
-          # Ecommerce microservices specific scraping
+        
+        # Ecommerce microservices specific scraping
         - job_name: 'ecommerce-microservices'
           kubernetes_sd_configs:
           - role: endpoints
             namespaces:
               names:
               - default
-              - ecommerce-app
+              - ecommerce
           relabel_configs:
           - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
             action: keep

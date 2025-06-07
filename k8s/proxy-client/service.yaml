@@ -4,10 +4,6 @@ metadata:
   name: proxy-client
   labels:
     app: proxy-client
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/path: "/actuator/prometheus"
-    prometheus.io/port: "8900"
 spec:
   selector:
     app: proxy-client # Debe coincidir con las etiquetas del Pod del Deployment

@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: favourite-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8800"
+        prometheus.io/path: "/favourite-service/actuator/prometheus"
     spec:
       containers:
       - name: favourite-service

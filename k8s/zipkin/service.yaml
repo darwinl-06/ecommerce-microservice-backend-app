@@ -4,10 +4,6 @@ metadata:
   name: zipkin-service
   labels:
     app: zipkin
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/path: "/actuator/prometheus"
-    prometheus.io/port: "9411"
 spec:
   type: NodePort
   ports:

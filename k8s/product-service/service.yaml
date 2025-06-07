@@ -4,10 +4,6 @@ metadata:
   name: product-service
   labels:
     app: product-service
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/path: "/actuator/prometheus"
-    prometheus.io/port: "8500"
 spec:
   selector:
     app: product-service # Debe coincidir con las etiquetas del Pod del Deployment

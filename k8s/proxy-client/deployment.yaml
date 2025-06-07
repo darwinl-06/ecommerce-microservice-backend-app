@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: proxy-client
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8900"
+        prometheus.io/path: "/proxy-client/actuator/prometheus"
     spec:
       containers:
         - name: proxy-client
