@@ -165,7 +165,7 @@ extraInitContainers: |
     - /bin/sh
     - -c
     - |
-      until curl -s "http://elasticsearch-master.monitoring.svc.cluster.local:9200/_cluster/health?wait_for_status=yellow&timeout=60s"; do
+      until curl -s "http://elasticsearch-master.monitoring.svc.cluster.local:9200/_cluster/health?wait_for_status=yellow&timeout=180s"; do
         echo "Waiting for Elasticsearch to be ready..."
         sleep 10
       done
