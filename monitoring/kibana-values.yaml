@@ -22,12 +22,10 @@ resources:
 service:
   type: LoadBalancer
   port: 5601
-  nodePort: ""
   annotations: {}
-  loadBalancerSourceRanges: []
   httpPortName: http
 
-# Ingress configuration (optional)
+# Ingress configuration
 ingress:
   enabled: false
   className: ""
@@ -39,47 +37,38 @@ ingress:
         - path: /
   tls: []
 
-# Kibana configuration
+# Kibana configuration - simplified and corrected
 kibanaConfig:
   kibana.yml: |
-    # Server configuration
     server.name: kibana
     server.host: 0.0.0.0
     server.port: 5601
     server.basePath: ""
     server.maxPayloadBytes: 1048576
     
-    # Elasticsearch configuration
     elasticsearch.hosts: ["http://elasticsearch-master.monitoring.svc.cluster.local:9200"]
     elasticsearch.pingTimeout: 1500
     elasticsearch.requestTimeout: 30000
     elasticsearch.shardTimeout: 30000
     elasticsearch.ssl.verificationMode: none
     
-    # Security configuration (disabled for testing)
     xpack.security.enabled: false
     xpack.encryptedSavedObjects.encryptionKey: "fhjskloppd678ehkdfdlliverpoolfcr"
     
-    # Monitoring
     monitoring.ui.container.elasticsearch.enabled: true
     
-    # Logging
     logging.level: info
     logging.quiet: false
     logging.dest: stdout
     
-    # Data views and index patterns
     data.autocomplete.valueSuggestions.enabled: true
     data.autocomplete.valueSuggestions.timeout: 1000
     
-    # Maps
     map.includeElasticMapsService: true
     
-    # Telemetry
     telemetry.enabled: false
     telemetry.optIn: false
     
-    # Default index patterns for ecommerce logs
     kibana.defaultAppId: "discover"
 
 # Security context
@@ -127,13 +116,6 @@ livenessProbe:
   failureThreshold: 3
   successThreshold: 1
 
-# Persistent storage (optional for saved objects)
-persistence:
-  enabled: false
-  size: 5Gi
-  storageClass: "standard-rwo"
-  accessMode: ReadWriteOnce
-
 # Service account
 serviceAccount:
   create: true
@@ -157,7 +139,7 @@ affinity: {}
 # Priority class
 priorityClassName: ""
 
-# Init containers for index pattern setup
+# Init containers for waiting Elasticsearch
 extraInitContainers: |
   - name: wait-for-elasticsearch
     image: curlimages/curl:7.85.0
@@ -182,13 +164,9 @@ lifecycle:
           echo "Kibana is shutting down..."
           sleep 5
 
-# Labels
+# Labels and annotations
 labels: {}
-
-# Pod labels
 podLabels: {}
-
-# Annotations
 annotations: {}
 
 # Image pull secrets
@@ -197,13 +175,9 @@ imagePullSecrets: []
 # Host aliases
 hostAliases: []
 
-# Extra volumes
+# Extra volumes and mounts
 extraVolumes: []
-
-# Extra volume mounts
 extraVolumeMounts: []
-
-# Extra containers
 extraContainers: []
 
 # Update strategy
@@ -218,16 +192,13 @@ antiAffinity: "soft"
 
 # HTTP configuration
 httpPort: 5601
-
-# Protocol
 protocol: http
-
-# Server host
 serverHost: "0.0.0.0"
-
-# Minimum master nodes
-minimumMasterNodes: 1
 
 # Tests configuration
 tests:
   enabled: true
+
+# Persistent storage (disabled by default)
+persistence:
+  enabled: false

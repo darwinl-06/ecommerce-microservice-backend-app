@@ -1,12 +1,9 @@
 # Grafana Configuration for Ecommerce Microservices Dashboard
 # Compatible with GKE and Jenkins CI/CD
 
-# Admin credentials configuration
-admin:
-  existingSecret: grafana-admin-credentials
-  userKey: admin-user
-  passwordKey: admin-password
-
+# Simple admin configuration
+adminUser: admin
+adminPassword: admin123
 
 # Resource configuration
 resources:
@@ -20,9 +17,8 @@ resources:
 # Persistent storage
 persistence:
   enabled: true
-  type: pvc
   size: 10Gi
-  storageClassName: standard-rwo  # GKE standard storage class
+  storageClassName: standard-rwo
   accessModes:
     - ReadWriteOnce
 
@@ -36,6 +32,9 @@ service:
 env:
   GF_USERS_ALLOW_SIGN_UP: "false"
   GF_SECURITY_ALLOW_EMBEDDING: "true"
+  GF_AUTH_ANONYMOUS_ENABLED: "false"
+  GF_LOG_MODE: "console"
+  GF_LOG_LEVEL: "info"
 
 # Grafana configuration
 grafana.ini:
@@ -48,18 +47,13 @@ grafana.ini:
   users:
     allow_sign_up: false
     auto_assign_org_role: Viewer
-  auth.anonymous:
+  "auth.anonymous":
     enabled: false
   log:
     mode: console
     level: info
-  paths:
-    data: /var/lib/grafana/
-    logs: /var/log/grafana
-    plugins: /var/lib/grafana/plugins
-    provisioning: /etc/grafana/provisioning
 
-# Datasources configuration
+# Datasources
 datasources:
   datasources.yaml:
     apiVersion: 1
@@ -69,150 +63,13 @@ datasources:
       url: http://prometheus-server.monitoring.svc.cluster.local
       access: proxy
       isDefault: true
-      jsonData:
-        timeInterval: 5s
-        queryTimeout: 60s
-        httpMethod: POST
-      editable: true
-    
-    - name: Loki
-      type: loki
-      url: http://loki.monitoring.svc.cluster.local:3100
-      access: proxy
-      isDefault: false
-      jsonData:
-        maxLines: 1000
-      editable: true
-
-# Dashboard providers configuration
-dashboardProviders:
-  dashboardproviders.yaml:
-    apiVersion: 1
-    providers:
-    - name: 'ecommerce-dashboards'
-      orgId: 1
-      folder: 'Ecommerce Microservices'
-      type: file
-      disableDeletion: false
-      updateIntervalSeconds: 10
-      allowUiUpdates: true
-      options:
-        path: /var/lib/grafana/dashboards/ecommerce-dashboards
-    
-    - name: 'kubernetes-dashboards'
-      orgId: 1
-      folder: 'Kubernetes'
-      type: file
-      disableDeletion: false
-      updateIntervalSeconds: 10
-      allowUiUpdates: true
-      options:
-        path: /var/lib/grafana/dashboards/kubernetes-dashboards
-
-# Dashboard ConfigMaps
-dashboards:
-  ecommerce-dashboards:
-    ecommerce-overview.json: |
-      {
-        "dashboard": {
-          "id": null,
-          "title": "Ecommerce Microservices Overview",
-          "tags": ["ecommerce", "microservices"],
-          "timezone": "browser",
-          "panels": [
-            {
-              "id": 1,
-              "title": "Service Health Status",
-              "type": "stat",
-              "targets": [
-                {
-                  "expr": "up{job=\"ecommerce-microservices\"}",
-                  "legendFormat": "{{kubernetes_name}}"
-                }
-              ],
-              "fieldConfig": {
-                "defaults": {
-                  "mappings": [
-                    {
-                      "options": {
-                        "0": {
-                          "text": "DOWN",
-                          "color": "red"
-                        },
-                        "1": {
-                          "text": "UP",
-                          "color": "green"
-                        }
-                      },
-                      "type": "value"
-                    }
-                  ]
-                }
-              },
-              "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 0,
-                "y": 0
-              }
-            },
-            {
-              "id": 2,
-              "title": "Request Rate",
-              "type": "graph",
-              "targets": [
-                {
-                  "expr": "rate(http_requests_total{job=\"ecommerce-microservices\"}[5m])",
-                  "legendFormat": "{{kubernetes_name}} - {{method}}"
-                }
-              ],
-              "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 0
-              }
-            },
-            {
-              "id": 3,
-              "title": "Response Time",
-              "type": "graph",
-              "targets": [
-                {
-                  "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"ecommerce-microservices\"}[5m]))",
-                  "legendFormat": "{{kubernetes_name}} - 95th percentile"
-                }
-              ],
-              "gridPos": {
-                "h": 8,
-                "w": 24,
-                "x": 0,
-                "y": 8
-              }
-            }
-          ],
-          "time": {
-            "from": "now-1h",
-            "to": "now"
-          },
-          "refresh": "5s"
-        }
-      }
-
-# Plugins to install
-plugins:
-  - grafana-piechart-panel
-  - grafana-worldmap-panel
-  - grafana-clock-panel
 
 # RBAC
 rbac:
   create: true
-  pspEnabled: false
 
 serviceAccount:
   create: true
-  name: grafana
 
 # Security context
 securityContext:
@@ -226,30 +83,11 @@ image:
   tag: "10.0.0"
   pullPolicy: IfNotPresent
 
-# Ingress configuration (optional)
-ingress:
-  enabled: false
-  annotations: {}
-  hosts:
-    - host: grafana.ecommerce.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-
-# Sidecar for automatic dashboard loading
+# Sidecar configuration
 sidecar:
   dashboards:
     enabled: true
     label: grafana_dashboard
-    labelValue: "1"
-    folder: /tmp/dashboards
-    searchNamespace: ALL
-    provider:
-      allowUiUpdates: true
-  
   datasources:
     enabled: true
     label: grafana_datasource
-    labelValue: "1"
-    searchNamespace: ALL

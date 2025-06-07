@@ -89,7 +89,6 @@ pipeline {
             steps {
                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
                 bat "kubectl get namespace monitoring || kubectl create namespace monitoring"
-                bat "kubectl get namespace logging || kubectl create namespace logging"
             }
         }
 
@@ -194,23 +193,21 @@ pipeline {
              }
          }
 
-
-
-        stage('Build & Push Docker Images') {
-            when { anyOf { branch 'stage'; branch 'master' } }
-            steps {
-                withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
-                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
-
-                    script {
-                        SERVICES.split().each { service ->
-                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
-                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
-                        }
-                    }
-                }
-            }
-        }
+//         stage('Build & Push Docker Images') {
+//             when { anyOf { branch 'stage'; branch 'master' } }
+//             steps {
+//                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
+//                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+//
+//                     script {
+//                         SERVICES.split().each { service ->
+//                             bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
+//                             bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
         stage('Unit Tests') {
             when {
@@ -483,21 +480,7 @@ pipeline {
 //                     input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
 //                 }
 //             }
-//         }
-
-        stage('Create Grafana Secret') {
-            steps {
-                script {
-                    bat '''
-                    kubectl delete secret grafana-admin-credentials -n monitoring --ignore-not-found
-                    kubectl create secret generic grafana-admin-credentials ^
-                      --from-literal=admin-user=admin ^
-                      --from-literal=admin-password=admin123 ^
-                      -n monitoring
-                    '''
-                }
-            }
-        }
+//         }       
 
         stage('Deploy Observability Stack') {
             when { branch 'master' }
@@ -515,13 +498,16 @@ pipeline {
                       -n monitoring -f monitoring/grafana-values.yaml
 
                     helm upgrade --install elasticsearch elastic/elasticsearch ^
-                      -n logging -f monitoring/elasticsearch-values.yaml
+                      -n monitoring -f monitoring/elasticsearch-values.yaml
+
+                    kubectl delete configmap kibana-kibana-helm-scripts -n monitoring --ignore-not-found
+                    kubectl delete serviceaccount pre-install-kibana-kibana -n monitoring --ignore-not-found
 
                     helm upgrade --install kibana elastic/kibana ^
-                      -n logging -f monitoring/kibana-values.yaml
+                      -n monitoring -f monitoring/kibana-values.yaml
 
                     helm upgrade --install logstash elastic/logstash ^
-                      -n logging -f monitoring/logstash-values.yaml
+                      -n monitoring -f monitoring/logstash-values.yaml
                 '''
             }
         }
