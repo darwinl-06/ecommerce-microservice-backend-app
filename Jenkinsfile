@@ -38,14 +38,6 @@ pipeline {
             }
         }
 
-
-        stage('Ver PATH') {
-            steps {
-                bat 'echo %PATH%'
-            }
-        }
-
-
         stage('Ensure Namespace') {
             steps {
                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
@@ -74,53 +66,53 @@ pipeline {
             }
         }
 
-        stage('Run SonarQube Analysis') {
-            when { branch 'master' }
-            tools {
-                jdk 'JDK_20'
-            }
-            environment {
-                JAVA_HOME = tool 'JDK_20'
-                PATH = "${JAVA_HOME}/bin:${env.PATH}"
-                scannerHome = tool 'SonarQubeOtraCosa'
-            }
-            steps {
-                script {
-                    def javaServices = [
-                        'api-gateway',
-                        'cloud-config',
-                        'favourite-service',
-                        'order-service',
-                        'payment-service',
-                        'product-service',
-                        'proxy-client',
-                        'service-discovery',
-                        'shipping-service',
-                        'user-service',
-                        'e2e-tests'
-                    ]
-
-                    withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
-                        javaServices.each { service ->
-                            dir(service) {
-                                bat "${scannerHome}/bin/sonar-scanner " +
-                                "-Dsonar.projectKey=${service} " +
-                                "-Dsonar.projectName=${service} " +
-                                '-Dsonar.sources=src ' +
-                                '-Dsonar.java.binaries=target/classes'
-                            }
-                        }
-
-                        dir('locust') {
-                            bat "${scannerHome}/bin/sonar-scanner " +
-                            '-Dsonar.projectKey=locust ' +
-                            '-Dsonar.projectName=locust ' +
-                            '-Dsonar.sources=test'
-                        }
-                    }
-                }
-            }
-        }
+//         stage('Run SonarQube Analysis') {
+//             when { branch 'master' }
+//             tools {
+//                 jdk 'JDK_20'
+//             }
+//             environment {
+//                 JAVA_HOME = tool 'JDK_20'
+//                 PATH = "${JAVA_HOME}/bin:${env.PATH}"
+//                 scannerHome = tool 'SonarQubeOtraCosa'
+//             }
+//             steps {
+//                 script {
+//                     def javaServices = [
+//                         'api-gateway',
+//                         'cloud-config',
+//                         'favourite-service',
+//                         'order-service',
+//                         'payment-service',
+//                         'product-service',
+//                         'proxy-client',
+//                         'service-discovery',
+//                         'shipping-service',
+//                         'user-service',
+//                         'e2e-tests'
+//                     ]
+//
+//                     withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
+//                         javaServices.each { service ->
+//                             dir(service) {
+//                                 bat "${scannerHome}/bin/sonar-scanner " +
+//                                 "-Dsonar.projectKey=${service} " +
+//                                 "-Dsonar.projectName=${service} " +
+//                                 '-Dsonar.sources=src ' +
+//                                 '-Dsonar.java.binaries=target/classes'
+//                             }
+//                         }
+//
+//                         dir('locust') {
+//                             bat "${scannerHome}/bin/sonar-scanner " +
+//                             '-Dsonar.projectKey=locust ' +
+//                             '-Dsonar.projectName=locust ' +
+//                             '-Dsonar.sources=test'
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
          stage('Trivy Vulnerability Scan & Report') {
              when { branch 'stage' }
@@ -449,24 +441,52 @@ pipeline {
             }
         }
 
-        stage('Waiting approval for deployment') {
+//         stage('Waiting approval for deployment') {
+//             when { branch 'master' }
+//             steps {
+//                 script {
+//                     emailext(
+//                         to: '$DEFAULT_RECIPIENTS',
+//                         subject: "Action Required: Approval Needed for Deploy of Build #${env.BUILD_NUMBER}",
+//                         body: """\
+//                         The build #${env.BUILD_NUMBER} for branch *${env.BRANCH_NAME}* has completed and is pending approval for deployment.
+//                         Please review the changes and approve or abort
+//                         You can access the build details here:
+//                         ${env.BUILD_URL}
+//                         """
+//                     )
+//                     input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
+//                 }
+//             }
+//         }
+
+        stage('Deploy Observability Stack') {
             when { branch 'master' }
             steps {
-                script {
-                    emailext(
-                        to: '$DEFAULT_RECIPIENTS',
-                        subject: "Action Required: Approval Needed for Deploy of Build #${env.BUILD_NUMBER}",
-                        body: """\
-                        The build #${env.BUILD_NUMBER} for branch *${env.BRANCH_NAME}* has completed and is pending approval for deployment.
-                        Please review the changes and approve or abort
-                        You can access the build details here:
-                        ${env.BUILD_URL}
-                        """
-                    )
-                    input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
-                }
+                bat '''
+                    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                    helm repo add grafana https://grafana.github.io/helm-charts
+                    helm repo add elastic https://helm.elastic.co
+                    helm repo update
+
+                    helm upgrade --install prometheus prometheus-community/prometheus ^
+                      -n monitoring -f monitoring/prometheus-values.yaml
+
+                    helm upgrade --install grafana grafana/grafana ^
+                      -n monitoring -f monitoring/grafana-values.yaml
+
+                    helm upgrade --install elasticsearch elastic/elasticsearch ^
+                      -n logging -f monitoring/elasticsearch-values.yaml
+
+                    helm upgrade --install kibana elastic/kibana ^
+                      -n logging -f monitoring/kibana-values.yaml
+
+                    helm upgrade --install logstash elastic/logstash ^
+                      -n logging -f monitoring/logstash-values.yaml
+                '''
             }
         }
+        
         
         stage('Deploy Common Config') {
             when { anyOf { branch 'master' } }

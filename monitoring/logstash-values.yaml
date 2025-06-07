@@ -1,0 +1,316 @@
+# Logstash Configuration for Ecommerce Microservices Log Processing
+# Compatible with GKE and Jenkins CI/CD
+
+# Image configuration
+image: "docker.elastic.co/logstash/logstash"
+imageTag: "8.8.0"
+imagePullPolicy: "IfNotPresent"
+
+# Resource configuration
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1000m"
+    memory: "2Gi"
+
+# JVM heap size
+logstashJavaOpts: "-Xmx768m -Xms768m"
+
+# Service configuration
+service:
+  type: ClusterIP
+  ports:
+    - name: beats
+      port: 5044
+      protocol: TCP
+      targetPort: 5044
+    - name: tcp-input
+      port: 5000
+      protocol: TCP
+      targetPort: 5000
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+
+# Persistent storage
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: "standard-rwo"
+
+# Logstash configuration
+logstashConfig:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    http.port: 8080
+    path.logs: /usr/share/logstash/logs
+    path.data: /usr/share/logstash/data
+    pipeline.ordered: auto
+    pipeline.workers: 2
+    pipeline.batch.size: 125
+    pipeline.batch.delay: 50
+    queue.type: memory
+    monitoring.enabled: false
+    xpack.monitoring.enabled: false
+
+# Logstash pipeline configuration
+logstashPipeline:
+  logstash.conf: |
+    input {
+      # Beats input for Filebeat/Metricbeat
+      beats {
+        port => 5044
+        codec => json
+      }
+      
+      # TCP input for direct log shipping
+      tcp {
+        port => 5000
+        codec => json_lines
+      }
+      
+      # HTTP input for webhook logs
+      http {
+        port => 8080
+        codec => json
+      }
+    }
+    
+    filter {
+      # Parse timestamp
+      if [@timestamp] {
+        date {
+          match => [ "@timestamp", "ISO8601" ]
+        }
+      }
+      
+      # Extract Kubernetes metadata
+      if [kubernetes] {
+        mutate {
+          add_field => {
+            "service_name" => "%{[kubernetes][container][name]}"
+            "pod_name" => "%{[kubernetes][pod][name]}"
+            "namespace" => "%{[kubernetes][namespace]}"
+          }
+        }
+      }
+      
+      # Parse JSON logs from microservices
+      if [message] =~ /^\{.*\}$/ {
+        json {
+          source => "message"
+          target => "parsed_log"
+        }
+        
+        # Extract common fields from parsed JSON
+        if [parsed_log] {
+          if [parsed_log][level] {
+            mutate {
+              add_field => { "log_level" => "%{[parsed_log][level]}" }
+            }
+          }
+          
+          if [parsed_log][logger] {
+            mutate {
+              add_field => { "logger_name" => "%{[parsed_log][logger]}" }
+            }
+          }
+          
+          if [parsed_log][traceId] {
+            mutate {
+              add_field => { "trace_id" => "%{[parsed_log][traceId]}" }
+            }
+          }
+          
+          if [parsed_log][spanId] {
+            mutate {
+              add_field => { "span_id" => "%{[parsed_log][spanId]}" }
+            }
+          }
+        }
+      }
+      
+      # Grok patterns for common log formats
+      grok {
+        match => {
+          "message" => [
+            "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} \[%{DATA:thread}\] %{DATA:logger} - %{GREEDYDATA:log_message}",
+            "\[%{TIMESTAMP_ISO8601:timestamp}\] %{LOGLEVEL:level} in %{DATA:class}: %{GREEDYDATA:log_message}",
+            "%{GREEDYDATA:log_message}"
+          ]
+        }
+        tag_on_failure => ["_grokparsefailure"]
+      }
+      
+      # Add service identification based on namespace or labels
+      if [kubernetes][namespace] == "ecommerce" or [kubernetes][namespace] == "default" {
+        if [kubernetes][container][name] =~ /user-service/ {
+          mutate { add_field => { "microservice" => "user-service" } }
+        } else if [kubernetes][container][name] =~ /order-service/ {
+          mutate { add_field => { "microservice" => "order-service" } }
+        } else if [kubernetes][container][name] =~ /payment-service/ {
+          mutate { add_field => { "microservice" => "payment-service" } }
+        } else if [kubernetes][container][name] =~ /product-service/ {
+          mutate { add_field => { "microservice" => "product-service" } }
+        } else if [kubernetes][container][name] =~ /shipping-service/ {
+          mutate { add_field => { "microservice" => "shipping-service" } }
+        } else if [kubernetes][container][name] =~ /favourite-service/ {
+          mutate { add_field => { "microservice" => "favourite-service" } }
+        } else if [kubernetes][container][name] =~ /api-gateway/ {
+          mutate { add_field => { "microservice" => "api-gateway" } }
+        }
+      }
+      
+      # Clean up fields
+      mutate {
+        remove_field => [ "agent", "ecs", "host", "input" ]
+      }
+      
+      # Convert log level to lowercase
+      if [log_level] {
+        mutate {
+          lowercase => [ "log_level" ]
+        }
+      }
+    }
+    
+    output {
+      # Output to Elasticsearch
+      elasticsearch {
+        hosts => ["http://elasticsearch-master.monitoring.svc.cluster.local:9200"]
+        index => "ecommerce-logs-%{+YYYY.MM.dd}"
+        template_name => "ecommerce-logs"
+        template_pattern => "ecommerce-logs-*"
+        template => {
+          "index_patterns" => ["ecommerce-logs-*"],
+          "settings" => {
+            "number_of_shards" => 1,
+            "number_of_replicas" => 0,
+            "index.refresh_interval" => "30s"
+          },
+          "mappings" => {
+            "properties" => {
+              "@timestamp" => { "type" => "date" },
+              "message" => { "type" => "text" },
+              "log_level" => { "type" => "keyword" },
+              "microservice" => { "type" => "keyword" },
+              "namespace" => { "type" => "keyword" },
+              "pod_name" => { "type" => "keyword" },
+              "trace_id" => { "type" => "keyword" },
+              "span_id" => { "type" => "keyword" },
+              "logger_name" => { "type" => "keyword" }
+            }
+          }
+        }
+      }
+      
+      # Debug output (remove in production)
+      stdout {
+        codec => rubydebug
+      }
+    }
+
+# Environment variables
+extraEnvs:
+  - name: LS_JAVA_OPTS
+    value: "-Xmx768m -Xms768m"
+  - name: ELASTICSEARCH_HOSTS
+    value: "http://elasticsearch-master.monitoring.svc.cluster.local:9200"
+
+# Security context
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+  runAsUser: 1000
+  runAsGroup: 1000
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# Service account
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9600"
+  prometheus.io/path: "/_node/stats"
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Update strategy
+updateStrategy:
+  type: RollingUpdate
+
+# Replicas
+replicas: 1
+
+# Extra volumes for custom configurations
+extraVolumes: []
+
+# Extra volume mounts
+extraVolumeMounts: []
+
+# Init containers
+extraInitContainers: |
+  - name: wait-for-elasticsearch
+    image: curlimages/curl:7.85.0
+    command:
+    - /bin/sh
+    - -c
+    - |
+      until curl -s "http://elasticsearch-master.monitoring.svc.cluster.local:9200/_cluster/health?wait_for_status=yellow&timeout=60s"; do
+        echo "Waiting for Elasticsearch to be ready..."
+        sleep 10
+      done
+      echo "Elasticsearch is ready, Logstash can start!"
+
+# Lifecycle hooks
+lifecycle:
+  preStop:
+    exec:
+      command:
+        - /bin/bash
+        - -c
+        - |
+          echo "Logstash is shutting down gracefully..."
+          sleep 10
