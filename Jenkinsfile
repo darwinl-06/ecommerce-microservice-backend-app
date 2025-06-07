@@ -39,11 +39,29 @@ pipeline {
             }
         }
 
-        stage('Ensure Namespace') {
+        stage('Authenticate to GCP') {
             steps {
-                bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
-                bat "kubectl get namespace monitoring || kubectl create namespace monitoring"
-                bat "kubectl get namespace logging || kubectl create namespace logging"
+                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    bat """
+                    echo "🔐 Activando cuenta de servicio..."
+                    gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+                    gcloud config set project $TF_VAR_project_id
+                    """
+                }
+            }
+        }
+
+        stage('Get GKE Credentials') {
+            steps {
+                script {
+                    def clusterName = "ecommerce-cluster-${env.TF_ENVIRONMENT}"
+                    def zone = env.TF_ENVIRONMENT == 'prod' ? 'us-central1' : 'us-central1-a'
+
+                    bat """
+                    echo 🔐 Obteniendo credenciales del cluster GKE...
+                    gcloud container clusters get-credentials ${clusterName} --zone ${zone} --project ${env.TF_VAR_project_id}
+                    """
+                }
             }
         }
 
@@ -66,6 +84,14 @@ pipeline {
             when { anyOf { branch 'master'; branch 'stage'; branch 'dev'; } }
             steps {
                 bat "mvn clean package -DskipTests"
+            }
+        }
+
+        stage('Ensure Namespace') {
+            steps {
+                bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
+                bat "kubectl get namespace monitoring || kubectl create namespace monitoring"
+                bat "kubectl get namespace logging || kubectl create namespace logging"
             }
         }
 
