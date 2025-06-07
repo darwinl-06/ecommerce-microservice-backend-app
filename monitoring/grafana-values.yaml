@@ -48,7 +48,7 @@ grafana.ini:
   users:
     allow_sign_up: false
     auto_assign_org_role: Viewer
-  "auth.anonymous":
+  auth.anonymous:
     enabled: false
   log:
     mode: console
