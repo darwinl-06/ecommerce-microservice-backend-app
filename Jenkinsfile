@@ -13,7 +13,7 @@ pipeline {
         SERVICES = 'service-discovery cloud-config api-gateway product-service user-service order-service payment-service shipping-service favourite-service proxy-client locust'
         K8S_NAMESPACE = 'ecommerce'
         PATH = "C:\\Program Files (x86)\\Google\\Cloud SDK\\google-cloud-sdk\\bin;${env.PATH}"
-
+        TF_VAR_project_id = 'proyecto-final-ingesoftv'
     }
 
     stages {
