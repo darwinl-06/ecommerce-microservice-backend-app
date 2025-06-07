@@ -15,11 +15,11 @@ server:
   # Resource limits for GKE environment
   resources:
     limits:
-      cpu: 1000m
-      memory: 2Gi
-    requests:
       cpu: 500m
       memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
   
   # Persistent storage
   persistentVolume:

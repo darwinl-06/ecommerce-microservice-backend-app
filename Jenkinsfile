@@ -488,7 +488,6 @@ pipeline {
                 bat '''
                     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
                     helm repo add grafana https://grafana.github.io/helm-charts
-                    helm repo add elastic https://helm.elastic.co
                     helm repo update
 
                     helm upgrade --install prometheus prometheus-community/prometheus ^
@@ -496,18 +495,6 @@ pipeline {
 
                     helm upgrade --install grafana grafana/grafana ^
                       -n monitoring -f monitoring/grafana-values.yaml
-
-                    helm upgrade --install elasticsearch elastic/elasticsearch ^
-                      -n monitoring -f monitoring/elasticsearch-values.yaml
-
-                    kubectl delete configmap kibana-kibana-helm-scripts -n monitoring --ignore-not-found
-                    kubectl delete serviceaccount pre-install-kibana-kibana -n monitoring --ignore-not-found
-
-                    helm upgrade --install kibana elastic/kibana ^
-                      -n monitoring -f monitoring/kibana-values.yaml
-
-                    helm upgrade --install logstash elastic/logstash ^
-                      -n monitoring -f monitoring/logstash-values.yaml
                 '''
             }
         }
