@@ -240,7 +240,7 @@ livenessProbe:
   httpGet:
     path: /
     port: 8080
-  initialDelaySeconds: 60
+  initialDelaySeconds: 100
   periodSeconds: 10
   timeoutSeconds: 5
   failureThreshold: 3
@@ -250,7 +250,7 @@ readinessProbe:
   httpGet:
     path: /
     port: 8080
-  initialDelaySeconds: 30
+  initialDelaySeconds: 60
   periodSeconds: 10
   timeoutSeconds: 5
   failureThreshold: 3
@@ -278,8 +278,9 @@ tolerations: []
 affinity: {}
 
 # Update strategy
-updateStrategy:
-  type: RollingUpdate
+statefulSet:
+  updateStrategy:
+    type: RollingUpdate
 
 # Replicas
 replicas: 1

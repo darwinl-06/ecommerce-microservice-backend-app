@@ -137,8 +137,6 @@ persistence:
 # Service account
 serviceAccount:
   create: true
-  name: ""
-  annotations: {}
 
 # Pod annotations
 podAnnotations:
