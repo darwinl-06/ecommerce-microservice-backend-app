@@ -463,6 +463,20 @@ pipeline {
 //             }
 //         }
 
+        stage('Create Grafana Secret') {
+            steps {
+                script {
+                    bat '''
+                    kubectl delete secret grafana-admin-credentials -n monitoring --ignore-not-found
+                    kubectl create secret generic grafana-admin-credentials ^
+                      --from-literal=admin-user=admin ^
+                      --from-literal=admin-password=admin123 ^
+                      -n monitoring
+                    '''
+                }
+            }
+        }
+
         stage('Deploy Observability Stack') {
             when { branch 'master' }
             steps {

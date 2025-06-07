@@ -2,8 +2,11 @@
 # Compatible with GKE and Jenkins CI/CD
 
 # Admin credentials configuration
-adminUser: admin
-adminPassword: admin123
+admin:
+  existingSecret: grafana-admin-credentials
+  userKey: admin-user
+  passwordKey: admin-password
+
 
 # Resource configuration
 resources:
