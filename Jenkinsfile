@@ -7,6 +7,7 @@ pipeline {
     }
 
     environment {
+        GOOGLE_APPLICATION_CREDENTIALS = credentials('gcp-service-account-key')
         DOCKERHUB_USER = 'darwinl06'
         DOCKER_CREDENTIALS_ID = 'huevos'
         SERVICES = 'service-discovery cloud-config api-gateway product-service user-service order-service payment-service shipping-service favourite-service proxy-client locust'
