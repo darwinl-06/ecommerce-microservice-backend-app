@@ -239,7 +239,7 @@ podSecurityContext:
 livenessProbe:
   httpGet:
     path: /
-    port: 8080
+    port: http
   initialDelaySeconds: 100
   periodSeconds: 10
   timeoutSeconds: 5
@@ -249,7 +249,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /
-    port: 8080
+    port: http
   initialDelaySeconds: 60
   periodSeconds: 10
   timeoutSeconds: 5

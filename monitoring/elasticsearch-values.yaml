@@ -193,11 +193,10 @@ extraEnvs:
   - name: discovery.type
     value: single-node
 
-# Health checks
 readinessProbe:
   httpGet:
     path: /_cluster/health?local=true
-    port: 9200
+    port: http
   initialDelaySeconds: 30
   periodSeconds: 10
   timeoutSeconds: 5
@@ -207,12 +206,13 @@ readinessProbe:
 livenessProbe:
   httpGet:
     path: /_cluster/health?local=true
-    port: 9200
+    port: http
   initialDelaySeconds: 90
   periodSeconds: 10
   timeoutSeconds: 5
   failureThreshold: 3
   successThreshold: 1
+
 
 # Lifecycle hooks
 lifecycle:
