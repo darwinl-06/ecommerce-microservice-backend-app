@@ -487,23 +487,15 @@ pipeline {
             when { branch 'master' }
             steps {
                 bat '''
-                    echo "📊 Deploying Prometheus and Grafana with pre-configured dashboards..."
+                    echo "📊 Deploying Prometheus and Grafana with ..."
+
                     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-                    helm repo add grafana https://grafana.github.io/helm-charts
                     helm repo update
 
-                    echo "🚀 Installing Prometheus..."
-                    helm upgrade --install prometheus prometheus-community/prometheus ^
-                      --namespace monitoring ^
-                      -f monitoring/prometheus-values.yaml ^
-                      --wait --timeout=300s
-
-                    echo "🚀 Installing Grafana with dashboards..."
-                    helm upgrade --install grafana grafana/grafana ^
-                      --namespace monitoring ^
-                      -f monitoring/grafana-values.yaml ^
-                      --wait --timeout=300s
-                    
+                    helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-stack ^
+                    --namespace monitoring --create-namespace ^
+                    -f monitoring/values.yaml
+                 
                     echo "✅ Observability stack deployed successfully!"
                 '''
             }
