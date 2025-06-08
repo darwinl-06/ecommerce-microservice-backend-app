@@ -486,20 +486,29 @@ pipeline {
             when { branch 'master' }
             steps {
                 bat '''
+                    echo "📊 Deploying Prometheus and Grafana with pre-configured dashboards..."
                     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
                     helm repo add grafana https://grafana.github.io/helm-charts
                     helm repo update
 
+                    echo "🚀 Installing Prometheus..."
                     helm upgrade --install prometheus prometheus-community/prometheus ^
-                      -n monitoring -f monitoring/prometheus-values.yaml
+                      --namespace monitoring ^
+                      -f monitoring/prometheus-values.yaml ^
+                      --wait --timeout=300s
 
+                    echo "🚀 Installing Grafana with dashboards..."
                     helm upgrade --install grafana grafana/grafana ^
-                      -n monitoring -f monitoring/grafana-values.yaml
+                      --namespace monitoring ^
+                      -f monitoring/grafana-values.yaml ^
+                      --wait --timeout=300s
+
+                      echo "✅ Observability stack deployed successfully!"
                 '''
             }
         }
         
-        
+     
         stage('Deploy Common Config') {
             when { anyOf { branch 'master' } }
             steps {
@@ -553,9 +562,7 @@ pipeline {
                 archiveArtifacts artifacts: 'RELEASE_NOTES.md', fingerprint: true
             }
         }
-    }
-
-    post {
+    }    post {
         success {
             echo "✅ Pipeline OK (${env.BRANCH_NAME}) - ${SPRING_PROFILES_ACTIVE}"
 
@@ -567,6 +574,36 @@ pipeline {
                         reportName: 'Locust Stress Test Reports',
                         keepAll: true
                     ])
+                }
+                
+                if (env.BRANCH_NAME == 'master') {
+                    echo """
+                    🎉 ===== DEPLOYMENT SUCCESSFUL ===== 🎉
+                    
+                    📊 GRAFANA DASHBOARDS READY!
+                    
+                    🔗 Access Instructions:
+                    1. Port-forward: kubectl port-forward svc/grafana 3000:80 -n monitoring
+                    2. Open: http://localhost:3000
+                    3. Login: admin / admin123
+                    
+                    📋 Available Dashboards:
+                    ├── Kubernetes/
+                    │   ├── Kubernetes Nodes (ID: 1860)
+                    │   ├── Kubernetes Pods (ID: 6417)
+                    │   ├── Kubernetes Cluster (ID: 7249)
+                    │   ├── Kubernetes Deployments (ID: 8588)
+                    │   ├── Kubernetes Persistent Volumes (ID: 13646)
+                    │   ├── Kubelet Metrics (ID: 2029)
+                    │   └── Etcd Metrics (ID: 3070)
+                    └── Monitoring/
+                        ├── Prometheus Stats (ID: 3662)
+                        └── Grafana Overview (ID: 179)
+                    
+                    📖 Full documentation: monitoring/GRAFANA_DASHBOARDS.md
+                    
+                    🚀 Happy Monitoring! 🚀
+                    """
                 }
             }
         }

@@ -88,6 +88,71 @@ sidecar:
   dashboards:
     enabled: true
     label: grafana_dashboard
+    folder: /tmp/dashboards
+    searchNamespace: monitoring
   datasources:
     enabled: true
     label: grafana_datasource
+
+# Dashboard Providers
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+    - name: 'kubernetes-dashboards'
+      orgId: 1
+      folder: 'Kubernetes'
+      type: file
+      disableDeletion: false
+      editable: true
+      options:
+        path: /var/lib/grafana/dashboards/kubernetes
+    - name: 'monitoring-dashboards'
+      orgId: 1
+      folder: 'Monitoring'
+      type: file
+      disableDeletion: false
+      editable: true
+      options:
+        path: /var/lib/grafana/dashboards/monitoring
+
+# Pre-configured Dashboards from Grafana.com
+dashboards:
+  kubernetes:
+    kubernetes-nodes:
+      gnetId: 1860
+      revision: 30
+      datasource: Prometheus
+    kubernetes-pods:
+      gnetId: 6417
+      revision: 1
+      datasource: Prometheus
+    kubernetes-cluster:
+      gnetId: 7249
+      revision: 1
+      datasource: Prometheus
+    kubernetes-deployment:
+      gnetId: 8588
+      revision: 1
+      datasource: Prometheus
+    kubernetes-persistent-volumes:
+      gnetId: 13646
+      revision: 2
+      datasource: Prometheus
+    kubelet-metrics:
+      gnetId: 2029
+      revision: 2
+      datasource: Prometheus
+    etcd-metrics:
+      gnetId: 3070
+      revision: 2
+      datasource: Prometheus
+  monitoring:
+    prometheus-stats:
+      gnetId: 3662
+      revision: 2
+      datasource: Prometheus
+    grafana-overview:
+      gnetId: 179
+      revision: 3
+      datasource: Prometheus
