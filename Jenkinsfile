@@ -193,21 +193,21 @@ pipeline {
              }
          }
 
-//         stage('Build & Push Docker Images') {
-//             when { anyOf { branch 'stage'; branch 'master' } }
-//             steps {
-//                 withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
-//                     bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
-//
-//                     script {
-//                         SERVICES.split().each { service ->
-//                             bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
-//                             bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
-//                         }
-//                     }
-//                 }
-//             }
-//         }
+        stage('Build & Push Docker Images') {
+            when { anyOf { branch 'stage'; branch 'master' } }
+            steps {
+                withCredentials([string(credentialsId: "${DOCKER_CREDENTIALS_ID}", variable: 'DOCKERHUB_PASSWORD')]) {
+                    bat "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
+
+                    script {
+                        SERVICES.split().each { service ->
+                            bat "docker build -t ${DOCKERHUB_USER}/${service}:${IMAGE_TAG} .\\${service}"
+                            bat "docker push ${DOCKERHUB_USER}/${service}:${IMAGE_TAG}"
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Unit Tests') {
             when {
@@ -258,7 +258,7 @@ pipeline {
         stage('Levantar contenedores para pruebas') {
             when {
                 anyOf {
-                    branch 'stage'
+                    branch 'master'
                 }
             }
             steps {
@@ -431,6 +431,58 @@ pipeline {
                     echo ✅ Pruebas de estrés completadas
                     '''
                 }
+            }
+        }
+
+        stage('OWASP ZAP Scan') {
+            when { branch 'master' }
+            steps {
+                script {
+                    echo '==> Iniciando escaneos con OWASP ZAP'
+
+                    def targets = [
+                        [name: 'order-service', url: 'http://order-service-container:8300/order-service'],
+                        [name: 'payment-service', url: 'http://payment-service-container:8400/payment-service'],
+                        [name: 'product-service', url: 'http://product-service-container:8500/product-service'],
+                        [name: 'shipping-service', url: 'http://shipping-service-container:8600/shipping-service'],
+                        [name: 'user-service', url: 'http://user-service-container:8700/user-service'],
+                        [name: 'favourite-service', url: 'http://favourite-service-container:8800/favourite-service']
+                    ]
+
+                    bat 'if not exist zap-reports mkdir zap-reports'
+
+                    targets.each { service ->
+                        def reportFile = "zap-reports\\report-${service.name}.html"
+                        echo "==> Escaneando ${service.name} (${service.url})"
+
+                        def workspacePath = env.WORKSPACE.replace('/', '\\')
+                        bat """
+                            docker run --rm ^
+                            --network ecommerce-test ^
+                            -v "${workspacePath}:\\zap\\wrk" ^
+                            zaproxy/zap-stable ^
+                            zap-full-scan.py ^
+                            -t ${service.url} ^
+                            -I
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Publicar Reportes de Seguridad') {
+            when { branch 'master' }
+            steps {
+                echo '==> Publicando reportes HTML en interfaz Jenkins'
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'zap-reports',
+                    reportFiles: 'report-*.html',
+                    reportName: 'ZAP Security Reports',
+                    reportTitles: 'OWASP ZAP Full Scan Results'
+                ])
             }
         }
 
