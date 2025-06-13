@@ -450,22 +450,26 @@ pipeline {
                         [name: 'favourite-service', url: 'http://favourite-service-container:8800/favourite-service']
                     ]
 
+                    // Crear carpeta local para reportes
                     bat 'if not exist zap-reports mkdir zap-reports'
 
                     targets.each { service ->
-                        def reportFile = "zap-reports\\report-${service.name}.html"
+                        def reportFile = "report-${service.name}.html"
                         echo "==> Escaneando ${service.name} (${service.url})"
                         bat """
                             docker run --rm ^
                             --network ecommerce-test ^
-                            -v "%WORKSPACE%:/zap/wrk" ^
+                            -v "%WORKSPACE%/zap-reports:/zap/wrk/zap-reports" ^
                             zaproxy/zap-stable ^
                             zap-full-scan.py ^
                             -t ${service.url} ^
-                            -r ${reportFile} ^
+                            -r zap-reports/${reportFile} ^
                             -I
                         """
                     }
+
+                    // Verifica que los reportes se hayan generado
+                    bat 'dir zap-reports'
                 }
             }
         }
@@ -485,6 +489,7 @@ pipeline {
                 ])
             }
         }
+
 
 
         stage('Detener y eliminar contenedores') {
