@@ -463,6 +463,7 @@ pipeline {
                             zaproxy/zap-stable ^
                             zap-full-scan.py ^
                             -t ${service.url} ^
+                            -r ${reportFile} ^
                             -I
                         """
                     }
@@ -489,7 +490,7 @@ pipeline {
         stage('Detener y eliminar contenedores') {
             when {
                 anyOf {
-                    branch 'stage'
+                    branch 'master'
                     expression { env.BRANCH_NAME.startsWith('feature/') }
                 }
             }
