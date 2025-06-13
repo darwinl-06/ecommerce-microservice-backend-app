@@ -89,6 +89,7 @@ pipeline {
             steps {
                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
                 bat "kubectl get namespace monitoring || kubectl create namespace monitoring"
+                bat "kubectl get namespace logging || kubectl create namespace logging"
             }
         }
 
@@ -451,15 +452,16 @@ pipeline {
 
                     bat 'if not exist zap-reports mkdir zap-reports'
 
+                    def reportDir = "${workspacePath}\\zap-reports"
+
                     targets.each { service ->
-                        def reportFile = "zap-reports\\report-${service.name}.html"
+                        def reportFile = "report-${service.name}.html"
                         echo "==> Escaneando ${service.name} (${service.url})"
 
-                        def workspacePath = env.WORKSPACE.replace('/', '\\')
                         bat """
                             docker run --rm ^
                             --network ecommerce-test ^
-                            -v "${workspacePath}:\\zap\\wrk" ^
+                            -v "${reportDir}:\\zap\\wrk" ^
                             zaproxy/zap-stable ^
                             zap-full-scan.py ^
                             -t ${service.url} ^
@@ -550,6 +552,44 @@ pipeline {
                     -f monitoring/values.yaml
                  
                     echo "✅ Observability stack deployed successfully!"
+                '''
+            }
+        }
+
+        stage('Deploy ELK Stack') {
+            when { branch 'master' }
+            steps {
+                bat '''
+                    echo "📊 Deploying ELK Stack (Elasticsearch, Logstash, Kibana) and Filebeat..."
+
+                    helm repo add elastic https://helm.elastic.co
+                    helm repo update
+
+                    echo "📦 Deploying Elasticsearch..."
+                    helm upgrade --install elasticsearch elastic/elasticsearch ^
+                    --namespace logging --create-namespace ^
+                    -f monitoring/elasticsearch-values.yaml
+
+                    echo "⏳ Waiting for Elasticsearch to be ready..."
+                    kubectl wait --for=condition=Ready pod -l app=elasticsearch-master ^
+                    --namespace logging --timeout=600s
+
+                    echo "📦 Deploying Logstash..."
+                    helm upgrade --install logstash elastic/logstash ^
+                    --namespace logging ^
+                    -f monitoring/logstash-values.yaml
+
+                    echo "📦 Deploying Kibana..."
+                    helm upgrade --install kibana elastic/kibana ^
+                    --namespace logging ^
+                    -f monitoring/kibana-values.yaml
+
+                    echo "📦 Deploying Filebeat..."
+                    helm upgrade --install filebeat elastic/filebeat ^
+                    --namespace logging ^
+                    -f monitoring/filebeat-values.yaml
+
+                    echo "✅ ELK Stack and Filebeat deployed successfully!"
                 '''
             }
         }
