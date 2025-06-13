@@ -259,7 +259,7 @@ pipeline {
         stage('Levantar contenedores para pruebas') {
             when {
                 anyOf {
-                    branch 'master'
+                    branch 'stage'
                 }
             }
             steps {
@@ -436,7 +436,7 @@ pipeline {
         }
 
         stage('OWASP ZAP Scan') {
-            when { branch 'master' }
+            when { branch 'stage' }
             steps {
                 script {
                     echo '==> Iniciando escaneos con OWASP ZAP'
@@ -475,7 +475,7 @@ pipeline {
         }
 
         stage('Publicar Reportes de Seguridad') {
-            when { branch 'master' }
+            when { branch 'stage' }
             steps {
                 echo '==> Publicando reportes HTML en interfaz Jenkins'
                 publishHTML([
@@ -495,7 +495,7 @@ pipeline {
         stage('Detener y eliminar contenedores') {
             when {
                 anyOf {
-                    branch 'master'
+                    branch 'stage'
                     expression { env.BRANCH_NAME.startsWith('feature/') }
                 }
             }
@@ -623,21 +623,21 @@ pipeline {
             }
         }
 
-//         stage('Deploy Microservices') {
-//             when { anyOf { branch 'master' } }
-//             steps {
-//                 script {
-//                     SERVICES.split().each { svc ->
-//                         if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
-//                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
-//                             bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
-//                         }
-//                     }
-//                 }
-//             }
-//         }
+        stage('Deploy Microservices') {
+            when { anyOf { branch 'master' } }
+            steps {
+                script {
+                    SERVICES.split().each { svc ->
+                        if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
+                            bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
+                            bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
+                            bat "kubectl rollout status deployment/${svc} -n ${K8S_NAMESPACE} --timeout=300s"
+                        }
+                    }
+                }
+            }
+        }
         
         stage('Generate and Archive Release Notes') {
             when {
