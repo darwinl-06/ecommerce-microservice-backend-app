@@ -452,16 +452,13 @@ pipeline {
 
                     bat 'if not exist zap-reports mkdir zap-reports'
 
-                    def reportDir = "${workspacePath}\\zap-reports"
-
                     targets.each { service ->
-                        def reportFile = "report-${service.name}.html"
+                        def reportFile = "zap-reports\\report-${service.name}.html"
                         echo "==> Escaneando ${service.name} (${service.url})"
-
                         bat """
                             docker run --rm ^
                             --network ecommerce-test ^
-                            -v "${reportDir}:\\zap\\wrk" ^
+                            -v "%WORKSPACE%:/zap/wrk" ^
                             zaproxy/zap-stable ^
                             zap-full-scan.py ^
                             -t ${service.url} ^
@@ -488,6 +485,7 @@ pipeline {
                 ])
             }
         }
+
 
         stage('Detener y eliminar contenedores') {
             when {
