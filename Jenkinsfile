@@ -88,58 +88,56 @@ pipeline {
         stage('Ensure Namespace') {
             steps {
                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
-                bat "kubectl get namespace monitoring || kubectl create namespace monitoring"
-                bat "kubectl get namespace logging || kubectl create namespace logging"
             }
         }
 
-//         stage('Run SonarQube Analysis') {
-//             when { branch 'master' }
-//             tools {
-//                 jdk 'JDK_20'
-//             }
-//             environment {
-//                 JAVA_HOME = tool 'JDK_20'
-//                 PATH = "${JAVA_HOME}/bin:${env.PATH}"
-//                 scannerHome = tool 'SonarQubeOtraCosa'
-//             }
-//             steps {
-//                 script {
-//                     def javaServices = [
-//                         'api-gateway',
-//                         'cloud-config',
-//                         'favourite-service',
-//                         'order-service',
-//                         'payment-service',
-//                         'product-service',
-//                         'proxy-client',
-//                         'service-discovery',
-//                         'shipping-service',
-//                         'user-service',
-//                         'e2e-tests'
-//                     ]
-//
-//                     withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
-//                         javaServices.each { service ->
-//                             dir(service) {
-//                                 bat "${scannerHome}/bin/sonar-scanner " +
-//                                 "-Dsonar.projectKey=${service} " +
-//                                 "-Dsonar.projectName=${service} " +
-//                                 '-Dsonar.sources=src ' +
-//                                 '-Dsonar.java.binaries=target/classes'
-//                             }
-//                         }
-//
-//                         dir('locust') {
-//                             bat "${scannerHome}/bin/sonar-scanner " +
-//                             '-Dsonar.projectKey=locust ' +
-//                             '-Dsonar.projectName=locust ' +
-//                             '-Dsonar.sources=test'
-//                         }
-//                     }
-//                 }
-//             }
-//         }
+        stage('Run SonarQube Analysis') {
+            when { branch 'stager' }
+            tools {
+                jdk 'JDK_20'
+            }
+            environment {
+                JAVA_HOME = tool 'JDK_20'
+                PATH = "${JAVA_HOME}/bin:${env.PATH}"
+                scannerHome = tool 'SonarQubeOtraCosa'
+            }
+            steps {
+                script {
+                    def javaServices = [
+                        'api-gateway',
+                        'cloud-config',
+                        'favourite-service',
+                        'order-service',
+                        'payment-service',
+                        'product-service',
+                        'proxy-client',
+                        'service-discovery',
+                        'shipping-service',
+                        'user-service',
+                        'e2e-tests'
+                    ]
+
+                    withSonarQubeEnv(credentialsId: 'access_sonarqube', installationName: 'sonarqubesecae') {
+                        javaServices.each { service ->
+                            dir(service) {
+                                bat "${scannerHome}/bin/sonar-scanner " +
+                                "-Dsonar.projectKey=${service} " +
+                                "-Dsonar.projectName=${service} " +
+                                '-Dsonar.sources=src ' +
+                                '-Dsonar.java.binaries=target/classes'
+                            }
+                        }
+
+                        dir('locust') {
+                            bat "${scannerHome}/bin/sonar-scanner " +
+                            '-Dsonar.projectKey=locust ' +
+                            '-Dsonar.projectName=locust ' +
+                            '-Dsonar.sources=test'
+                        }
+                    }
+                }
+            }
+        }
 
          stage('Trivy Vulnerability Scan & Report') {
              when { branch 'stage' }
@@ -224,6 +222,18 @@ pipeline {
                     }
                 }
                 junit '**/target/surefire-reports/*.xml'
+
+                publishHTML(target: [
+                    reportDir: 'product-service/target/site/jacoco',
+                    reportFiles: 'index.html',
+                    reportName: 'Cobertura product-service'
+                ])
+                
+                publishHTML(target: [
+                    reportDir: 'user-service/target/site/jacoco',
+                    reportFiles: 'index.html',
+                    reportName: 'Cobertura user-service'
+                ])
             }
         }
 
@@ -521,83 +531,25 @@ pipeline {
             }
         }
 
-//         stage('Waiting approval for deployment') {
-//             when { branch 'master' }
-//             steps {
-//                 script {
-//                     emailext(
-//                         to: '$DEFAULT_RECIPIENTS',
-//                         subject: "Action Required: Approval Needed for Deploy of Build #${env.BUILD_NUMBER}",
-//                         body: """\
-//                         The build #${env.BUILD_NUMBER} for branch *${env.BRANCH_NAME}* has completed and is pending approval for deployment.
-//                         Please review the changes and approve or abort
-//                         You can access the build details here:
-//                         ${env.BUILD_URL}
-//                         """
-//                     )
-//                     input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
-//                 }
-//             }
-//         }           
-
-
-        stage('Deploy Observability Stack') {
+        stage('Waiting approval for deployment') {
             when { branch 'master' }
             steps {
-                bat '''
-                    echo "📊 Deploying Prometheus and Grafana with ..."
-
-                    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-                    helm repo update
-
-                    helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-stack ^
-                    --namespace monitoring --create-namespace ^
-                    -f monitoring/values.yaml
-                 
-                    echo "✅ Observability stack deployed successfully!"
-                '''
+                script {
+                    emailext(
+                        to: '$DEFAULT_RECIPIENTS',
+                        subject: "Action Required: Approval Needed for Deploy of Build #${env.BUILD_NUMBER}",
+                        body: """\
+                        The build #${env.BUILD_NUMBER} for branch *${env.BRANCH_NAME}* has completed and is pending approval for deployment.
+                        Please review the changes and approve or abort
+                        You can access the build details here:
+                        ${env.BUILD_URL}
+                        """
+                    )
+                    input message: 'Approve deployment to production (kubernetes) ?', ok: 'Deploy'
+                }
             }
-        }
+        }           
 
-        stage('Deploy ELK Stack') {
-            when { branch 'master' }
-            steps {
-                bat '''
-                    echo "📊 Deploying ELK Stack (Elasticsearch, Logstash, Kibana) and Filebeat..."
-
-                    helm repo add elastic https://helm.elastic.co
-                    helm repo update
-
-                    echo "📦 Deploying Elasticsearch..."
-                    helm upgrade --install elasticsearch elastic/elasticsearch ^
-                    --namespace logging --create-namespace ^
-                    -f monitoring/elasticsearch-values.yaml
-
-                    echo "⏳ Waiting for Elasticsearch to be ready..."
-                    kubectl wait --for=condition=Ready pod -l app=elasticsearch-master ^
-                    --namespace logging --timeout=600s
-
-                    echo "📦 Deploying Logstash..."
-                    helm upgrade --install logstash elastic/logstash ^
-                    --namespace logging ^
-                    -f monitoring/logstash-values.yaml
-
-                    echo "📦 Deploying Kibana..."
-                    helm upgrade --install kibana elastic/kibana ^
-                    --namespace logging ^
-                    -f monitoring/kibana-values.yaml
-
-                    echo "📦 Deploying Filebeat..."
-                    helm upgrade --install filebeat elastic/filebeat ^
-                    --namespace logging ^
-                    -f monitoring/filebeat-values.yaml
-
-                    echo "✅ ELK Stack and Filebeat deployed successfully!"
-                '''
-            }
-        }
-        
-        
         stage('Deploy Common Config') {
             when { anyOf { branch 'master' } }
             steps {
