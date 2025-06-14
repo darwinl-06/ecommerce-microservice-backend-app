@@ -1,0 +1,39 @@
+package com.selimhorri.app;
+
+import com.selimhorri.app.dto.CartDto;
+import com.selimhorri.app.dto.UserDto;
+import com.selimhorri.app.service.CartService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.web.client.RestTemplate;
+
+import static javax.management.Query.eq;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static reactor.core.publisher.Mono.when;
+
+public class CartServiceCircuitBreakerTest {
+
+    @Autowired
+    private CartService cartService;
+
+    @MockBean
+    private RestTemplate restTemplate;
+
+    @Test
+    void whenUserServiceFails_thenCircuitBreakerReturns() {
+        when(restTemplate.getForObject(anyString(), eq(UserDto.class)))
+                .thenThrow(new RuntimeException("User Service Down"));
+
+        CartDto result = cartService.findById(1);
+
+        assertNotNull(result);
+        assertEquals("Unavailable", result.getUserDto().getFirstName());
+        assertEquals("unavailable@temp.com", result.getUserDto().getEmail());
+    }
+
+
+
+}

@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -42,7 +43,9 @@ public class CartServiceImpl implements CartService {
 					.distinct()
 					.collect(Collectors.toUnmodifiableList());
 	}
-	
+
+	/*
+
 	@Override
 	public CartDto findById(final Integer cartId) {
 		log.info("*** CartDto, service; fetch cart by id *");
@@ -56,7 +59,46 @@ public class CartServiceImpl implements CartService {
 				.orElseThrow(() -> new CartNotFoundException(String
 						.format("Cart with id: %d not found", cartId)));
 	}
-	
+
+
+	 */
+
+	@CircuitBreaker(name = "cartService", fallbackMethod = "getUserFallback")
+	@Override
+	public CartDto findById(final Integer cartId) {
+		log.info("Fetching cart with id: {}", cartId);
+		return this.cartRepository.findById(cartId)
+				.map(CartMappingHelper::map)
+				.map(cart -> {
+					UserDto user = restTemplate.getForObject(
+							AppConstant.DiscoveredDomainsApi.USER_SERVICE_API_URL + "/" +
+									cart.getUserDto().getUserId(),
+							UserDto.class
+					);
+					cart.setUserDto(user);
+					return cart;
+				})
+				.orElseThrow(() -> new CartNotFoundException(
+						String.format("Cart with id: %d not found", cartId)));
+	}
+
+	public CartDto getUserFallback(Integer cartId, Exception ex) {
+		log.error("Fallback executed for cart {}, error: {}", cartId, ex.getMessage());
+		CartDto fallbackCart = new CartDto();
+		fallbackCart.setCartId(cartId);
+		fallbackCart.setUserDto(getDefaultUser());
+		return fallbackCart;
+	}
+
+	private UserDto getDefaultUser() {
+		UserDto defaultUser = new UserDto();
+		defaultUser.setFirstName("Unavailable");
+		defaultUser.setEmail("unavailable@temp.com");
+		return defaultUser;
+	}
+
+
+
 	@Override
 	public CartDto save(final CartDto cartDto) {
 		log.info("*** CartDto, service; save cart *");
