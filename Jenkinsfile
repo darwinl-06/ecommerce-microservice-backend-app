@@ -92,7 +92,7 @@ pipeline {
         }
 
         stage('Run SonarQube Analysis') {
-            when { branch 'stager' }
+            when { branch 'stage' }
             tools {
                 jdk 'JDK_20'
             }
@@ -460,7 +460,6 @@ pipeline {
                         [name: 'favourite-service', url: 'http://favourite-service-container:8800/favourite-service']
                     ]
 
-                    // Crear carpeta local para reportes
                     bat 'if not exist zap-reports mkdir zap-reports'
 
                     targets.each { service ->
@@ -477,9 +476,6 @@ pipeline {
                             -I
                         """
                     }
-
-                    // Verifica que los reportes se hayan generado
-                    bat 'dir zap-reports'
                 }
             }
         }
@@ -499,8 +495,6 @@ pipeline {
                 ])
             }
         }
-
-
 
         stage('Detener y eliminar contenedores') {
             when {
@@ -580,7 +574,7 @@ pipeline {
             steps {
                 script {
                     SERVICES.split().each { svc ->
-                        if (!['locust', 'shipping-service', 'favourite-service', 'proxy-client'].contains(svc)) {
+                        if (!['locust'].contains(svc)) {
                             bat "kubectl apply -f k8s\\${svc} -n ${K8S_NAMESPACE}"
                             bat "kubectl set image deployment/${svc} ${svc}=${DOCKERHUB_USER}/${svc}:${IMAGE_TAG} -n ${K8S_NAMESPACE}"
                             bat "kubectl set env deployment/${svc} SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE} -n ${K8S_NAMESPACE}"
