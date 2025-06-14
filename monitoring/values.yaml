@@ -41,8 +41,7 @@ grafana:
   service:
     type: LoadBalancer
     port: 80
-    
-  # Dashboards por defecto - mantener los que vienen con el stack
+      # Dashboards por defecto - mantener los que vienen con el stack
   defaultDashboardsEnabled: true
   defaultDashboardsTimezone: "UTC"
   
@@ -57,8 +56,15 @@ grafana:
       enabled: true
       org_role: Viewer
     users:
-      allow_sign_up: false
-      
+      allow_sign_up: false    # Configuración SMTP para Grafana (solo dashboards, alertas van por AlertManager)
+    smtp:
+      enabled: false
+    # Deshabilitar alertas unificadas (usaremos AlertManager)
+    unified_alerting:
+      enabled: true
+    # # Habilitar alertas legacy (compatibilidad con AlertManager)
+    # alerting:
+    #   enabled: true
   # Datasources - Prometheus será configurado automáticamente
   sidecar:
     dashboards:
@@ -66,8 +72,12 @@ grafana:
       searchNamespace: ALL
     datasources:
       enabled: true
+  
+  # Variables de entorno para SMTP Gmail (solo para dashboards)
+  env:
+    GF_SMTP_PASSWORD: "qqyx cbiq jjga pygp"
 
-# Configuración de Alertmanager
+# Configuración de Alertmanager - HABILITADO para alertas profesionales
 alertmanager:
   enabled: true
   alertmanagerSpec:
@@ -86,6 +96,88 @@ alertmanager:
           resources:
             requests:
               storage: 2Gi
+  
+  # Configuración completa de AlertManager con Gmail
+  config:
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'icesiproyecto@gmail.com'
+      smtp_auth_username: 'icesiproyecto@gmail.com'
+      smtp_auth_password: 'qqyx cbiq jjga pygp'
+      smtp_require_tls: true
+    
+    route:
+      group_by: ['alertname', 'deployment', 'severity']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 2h
+      receiver: 'default-receiver'
+      routes:
+      - match:
+          severity: critical
+        receiver: 'critical-receiver'
+        repeat_interval: 30m
+      - match:
+          severity: warning
+        receiver: 'warning-receiver'
+        repeat_interval: 1h
+    
+    receivers:
+    - name: 'default-receiver'
+      email_configs:
+        - to: 'darwinlenis.06@gmail.com'
+          headers:
+            subject: '[ECOMMERCE] {{ .GroupLabels.alertname }} - {{ .GroupLabels.severity }}'
+          text: |
+            🚨 ALERT: {{ .GroupLabels.alertname }}
+            
+            Deployment: {{ .GroupLabels.deployment }}
+            Severity: {{ .GroupLabels.severity }}
+            Namespace: {{ .GroupLabels.namespace }}
+            
+            Description: {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+            
+            Time: {{ .StartsAt }}
+            
+            Dashboard: http://localhost:3000
+
+    - name: 'critical-receiver'
+      email_configs:
+        - to: 'darwinlenis.06@gmail.com'
+          headers:
+            subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+          text: |
+            🚨🚨 CRITICAL ALERT 🚨🚨
+            
+            Alert: {{ .GroupLabels.alertname }}
+            Deployment: {{ .GroupLabels.deployment }}
+            Namespace: {{ .GroupLabels.namespace }}
+            
+            ⚠️ IMMEDIATE ACTION REQUIRED ⚠️
+            
+            Description: {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+            
+            Started: {{ .StartsAt }}
+            
+            Grafana: http://localhost:3000
+            Prometheus: http://localhost:9090
+
+    - name: 'warning-receiver'
+      email_configs:
+        - to: 'darwinlenis.06@gmail.com'
+          headers:
+            subject: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+          text: |
+            ⚠️ Warning Alert
+            
+            Alert: {{ .GroupLabels.alertname }}
+            Deployment: {{ .GroupLabels.deployment }}
+            Severity: {{ .GroupLabels.severity }}
+            
+            Description: {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+            
+            Time: {{ .StartsAt }}
+
 
 # Node Exporter para métricas del sistema
 nodeExporter:
@@ -118,17 +210,58 @@ additionalServiceMonitors:
       path: /actuator/prometheus
       interval: 30s
 
-# PrometheusRules personalizadas (opcional)
+# PrometheusRules para pods de microservicios (usando métricas que funcionan)
 additionalPrometheusRules:
-  - name: microservices-rules
+  - name: ecommerce-pods-alerts
     groups:
-    - name: microservices.rules
+    - name: pods.critical
       rules:
-      - alert: ServiceDown
-        expr: up == 0
+      # Deployment con 0 réplicas (escalado a 0)
+      - alert: DeploymentDown
+        expr: kube_deployment_status_replicas{namespace="ecommerce", deployment=~".*-service"} == 0
         for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "Service {{ $labels.instance }} is down"
-          description: "Service {{ $labels.instance }} has been down for more than 1 minute."
+          summary: "Deployment {{ $labels.deployment }} is down"
+          description: "Deployment {{ $labels.deployment }} has 0 replicas for more than 1 minute"
+      
+      # Deployment sin réplicas disponibles
+      - alert: DeploymentNotReady
+        expr: kube_deployment_status_replicas_available{namespace="ecommerce", deployment=~".*-service"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Deployment {{ $labels.deployment }} has no available replicas"
+          description: "Deployment {{ $labels.deployment }} has no available replicas for more than 2 minutes"
+      
+      # Pod reiniciando frecuentemente
+      - alert: PodRestarting
+        expr: rate(kube_pod_container_status_restarts_total{namespace="ecommerce", pod=~".*-service-.*"}[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} is restarting frequently"
+          description: "Pod {{ $labels.pod }} has restarted {{ $value }} times in the last 15 minutes"
+      
+      # Pod en estado pending
+      - alert: PodPending
+        expr: kube_pod_status_phase{phase="Pending", namespace="ecommerce", pod=~".*-service-.*"} == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} stuck in Pending state"
+          description: "Pod {{ $labels.pod }} has been in Pending state for more than 2 minutes"
+      
+      # Pod no listo
+      - alert: PodNotReady
+        expr: kube_pod_status_ready{condition="false", namespace="ecommerce", pod=~".*-service-.*"} == 1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} is not ready"
+          description: "Pod {{ $labels.pod }} has been not ready for more than 3 minutes"
