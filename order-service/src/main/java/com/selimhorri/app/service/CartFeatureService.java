@@ -2,7 +2,7 @@ package com.selimhorri.app.service;
 
 import org.springframework.stereotype.Service;
 
-import com.selimhorri.app.config.FeatureToggleConfig;
+import com.selimhorri.app.config.featureToggle.FeatureToggleConfig;
 import com.selimhorri.app.dto.CartDto;
 
 import lombok.RequiredArgsConstructor;
