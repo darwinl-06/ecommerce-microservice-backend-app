@@ -88,8 +88,6 @@ pipeline {
         stage('Ensure Namespace') {
             steps {
                 bat "kubectl get namespace ${K8S_NAMESPACE} || kubectl create namespace ${K8S_NAMESPACE}"
-                bat "kubectl get namespace monitoring || kubectl create namespace monitoring"
-                bat "kubectl get namespace logging || kubectl create namespace logging"
             }
         }
 
@@ -213,7 +211,7 @@ pipeline {
         stage('Unit Tests') {
             when {
                 anyOf {
-                    branch 'dev'; branch 'stage';
+                    branch 'dev'; branch 'master';
                     expression { env.BRANCH_NAME.startsWith('feature/') }
                 }
             }
@@ -224,6 +222,18 @@ pipeline {
                     }
                 }
                 junit '**/target/surefire-reports/*.xml'
+
+                publishHTML(target: [
+                    reportDir: 'product-service/target/site/jacoco',
+                    reportFiles: 'index.html',
+                    reportName: 'Cobertura product-service'
+                ])
+                
+                publishHTML(target: [
+                    reportDir: 'user-service/target/site/jacoco',
+                    reportFiles: 'index.html',
+                    reportName: 'Cobertura user-service'
+                ])
             }
         }
 
@@ -539,64 +549,6 @@ pipeline {
 //                 }
 //             }
 //         }           
-
-
-        stage('Deploy Observability Stack') {
-            when { branch 'master' }
-            steps {
-                bat '''
-                    echo "📊 Deploying Prometheus and Grafana with ..."
-
-                    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-                    helm repo update
-
-                    helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-stack ^
-                    --namespace monitoring --create-namespace ^
-                    -f monitoring/values.yaml
-                 
-                    echo "✅ Observability stack deployed successfully!"
-                '''
-            }
-        }
-
-        stage('Deploy ELK Stack') {
-            when { branch 'master' }
-            steps {
-                bat '''
-                    echo "📊 Deploying ELK Stack (Elasticsearch, Logstash, Kibana) and Filebeat..."
-
-                    helm repo add elastic https://helm.elastic.co
-                    helm repo update
-
-                    echo "📦 Deploying Elasticsearch..."
-                    helm upgrade --install elasticsearch elastic/elasticsearch ^
-                    --namespace logging --create-namespace ^
-                    -f monitoring/elasticsearch-values.yaml
-
-                    echo "⏳ Waiting for Elasticsearch to be ready..."
-                    kubectl wait --for=condition=Ready pod -l app=elasticsearch-master ^
-                    --namespace logging --timeout=600s
-
-                    echo "📦 Deploying Logstash..."
-                    helm upgrade --install logstash elastic/logstash ^
-                    --namespace logging ^
-                    -f monitoring/logstash-values.yaml
-
-                    echo "📦 Deploying Kibana..."
-                    helm upgrade --install kibana elastic/kibana ^
-                    --namespace logging ^
-                    -f monitoring/kibana-values.yaml
-
-                    echo "📦 Deploying Filebeat..."
-                    helm upgrade --install filebeat elastic/filebeat ^
-                    --namespace logging ^
-                    -f monitoring/filebeat-values.yaml
-
-                    echo "✅ ELK Stack and Filebeat deployed successfully!"
-                '''
-            }
-        }
-        
         
         stage('Deploy Common Config') {
             when { anyOf { branch 'master' } }
