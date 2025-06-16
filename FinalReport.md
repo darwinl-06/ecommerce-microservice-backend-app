@@ -18,6 +18,9 @@ Se definió y documentó una estrategia de branching basada en **GitFlow**, adap
 - **dev**: Rama de desarrollo, donde se integran las nuevas funcionalidades antes de pasar a stage.
 - **stage**: Rama de pre-producción, utilizada para pruebas integradas antes de pasar a producción.
 
+
+![branch](images/branch.png)
+
 El flujo de trabajo es el siguiente:
 1. Las nuevas funcionalidades y correcciones se desarrollan en ramas feature/ o fix/ a partir de dev.
 2. Una vez completadas y revisadas, se integran a dev.
@@ -118,6 +121,22 @@ Se implementó Scrum con Jira, se documentaron y gestionaron historias de usuari
 ##  Mensajería y Procesamiento Asíncrono
 - **Kafka:** Permite la comunicación asíncrona y desacoplada entre microservicios, facilitando la escalabilidad y el procesamiento de eventos en tiempo real.
 
+
+ Ambientes Definidos
+
+El ciclo de vida del software se gestiona a través de tres ambientes principales:
+
+- **dev:** Espacio seguro para experimentación y desarrollo individual.
+- **stage:** Entorno de integración y pruebas end-to-end, simula condiciones de producción.
+- **master (producción):** Entorno estable y seguro, donde se ejecuta la versión aprobada del sistema.
+
+![cover](images/stages.jpg)
+
+
+
+Cada ambiente cuenta con configuración propia y pipelines de CI/CD dedicados, permitiendo despliegues independientes y controlados.
+
+
 ## Estructura del proyecto
 
 ```
@@ -195,6 +214,102 @@ Se utiliza Zipkin para trazabilidad distribuida, permitiendo rastrear peticiones
 - Variables de entorno como `SPRING_ZIPKIN_BASE_URL`.
 
 
+## Patrones de Diseño Implementados
+
+A continuación se documentan los patrones de diseño implementados en la arquitectura del proyecto, junto con su propósito, beneficios y un fragmento de código representativo de cada uno.
+
+
+
+###  Circuit Breaker 
+
+**Propósito:**  
+El patrón Circuit Breaker protege a los microservicios de fallos en cascada cuando una dependencia está fallando o responde lentamente. Si detecta varios fallos consecutivos, "abre el circuito" y deja de intentar la operación durante un tiempo, devolviendo un error inmediato.
+
+**Beneficios:**
+- Previene la sobrecarga de servicios fallando repetidamente.
+- Mejora la resiliencia y estabilidad del sistema.
+- Permite una recuperación más rápida y controlada tras un fallo.
+
+**Implementación (usando Resilience4j):**
+```java
+@CircuitBreaker(name = "userService", fallbackMethod = "fallbackGetUser")
+public UserDto getUserById(Integer userId) {
+    return restTemplate.getForObject("http://USER-SERVICE/api/users/" + userId, UserDto.class);
+}
+
+public UserDto fallbackGetUser(Integer userId, Throwable t) {
+    // Lógica alternativa cuando el circuito está abierto o falla la llamada
+    return new UserDto(); // o retorna un mensaje de error personalizado
+}
+```
+
+![cover](images/test1.png)
+
+
+---
+
+### Feature Toggle
+
+**Propósito:**  
+Permite activar o desactivar funcionalidades del sistema en tiempo real, sin necesidad de desplegar una nueva versión, mediante configuración externa.
+
+**Beneficios:**
+- Permite despliegues seguros y pruebas A/B.
+- Reduce riesgos al habilitar nuevas funcionalidades de forma controlada.
+- Mejora la flexibilidad operativa.
+
+**Implementación (usando configuración externa):**
+```java
+@Value("${feature.toggle.newProductFeature:false}")
+private boolean newProductFeatureEnabled;
+
+@GetMapping("/new-feature")
+public ResponseEntity<String> newFeatureEndpoint() {
+    if (!newProductFeatureEnabled) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+            .body("Funcionalidad no disponible");
+    }
+    // Lógica de la nueva funcionalidad
+    return ResponseEntity.ok("Nueva funcionalidad activa");
+}
+```
+> El valor de `feature.toggle.newProductFeature` se puede cambiar en el servidor de configuración (`cloud-config`) y recargar dinámicamente.
+
+![cover](images/test2.png)
+
+
+---
+
+###Retry 
+
+**Propósito:**  
+Permite que los microservicios reintenten automáticamente una operación que ha fallado temporalmente antes de devolver un error.
+
+**Beneficios:**
+- Mejora la tolerancia a fallos transitorios.
+- Reduce la cantidad de errores visibles para el usuario final.
+- Aumenta la robustez y confiabilidad de las operaciones críticas.
+
+**Implementación (Spring Retry):**
+```java
+@Retryable(
+    value = { ProductNotFoundException.class },
+    maxAttempts = 3,
+    backoff = @Backoff(delay = 1000)
+)
+public ProductDto findById(final Integer productId) {
+    log.info("*** ProductDto, service; fetch product by id *");
+    return this.productRepository.findById(productId)
+        .map(ProductMappingHelper::map)
+        .orElseThrow(() -> new ProductNotFoundException(
+            String.format("Product with id: %d not found", productId)));
+}
+```
+> Si la búsqueda falla, el método se reintentará hasta 3 veces antes de lanzar la excepción.
+
+![cover](images/test3.png)
+
+
 ## CI/CD Avanzado
 
 ###  Análisis Estático de Código con SonarQube
@@ -216,6 +331,18 @@ Se integró SonarQube en la pipeline para realizar análisis estático de códig
  }
 ```
 > Este stage ejecuta el análisis de SonarQube para cada microservicio, usando el scanner oficial y variables de entorno seguras.
+
+![cover](images/sonar1.jpg)
+![cover](images/sonar2.jpg)
+
+
+#### **Interpretación de los resultados de SonarQube**
+
+Las imágenes muestran el dashboard de SonarQube tras los análisis automáticos de los microservicios.  
+- **Todos los microservicios analizados han pasado el Quality Gate** (indicador verde "Passed"), lo que significa que cumplen con los umbrales de calidad definidos para seguridad, mantenibilidad y fiabilidad.
+- **No se detectaron issues de seguridad, fiabilidad ni mantenibilidad** (todos los indicadores en "A").
+- **Cobertura de código y duplicación:** En los ejemplos mostrados, la cobertura de tests es 0% en algunos servicios, lo que indica que no se han instrumentado tests automáticos o no se han reportado correctamente. Sin embargo, no hay duplicación de código.
+- **Resumen:** El código es seguro, confiable y mantenible según SonarQube, pero se recomienda mejorar la cobertura de tests para mayor robustez.
 
 ---
 
@@ -263,6 +390,22 @@ stage('Trivy Vulnerability Scan & Report') {
 }
 ```
 > Este stage escanea todas las imágenes y publica un reporte HTML con los resultados de Trivy.
+
+![cover](images/trivi1.jpg)
+
+#### **resultados de Trivy**
+
+La imagen muestra un reporte generado por Trivy para la imagen Docker de `api-gateway`.  
+- **Se detectan varias vulnerabilidades críticas y altas** en paquetes del sistema base (por ejemplo, `curl` y `bash`).
+- **Columnas clave:**  
+  - **Severity:** Indica el nivel de criticidad (CRITICAL/HIGH).
+  - **Installed Version / Fixed Version:** Muestra la versión instalada y la versión donde el problema está corregido.
+  - **Links:** Proporciona enlaces a los reportes oficiales de cada vulnerabilidad (CVE).
+- **Acción recomendada:**  
+  - Actualizar la imagen base a una versión más reciente donde las vulnerabilidades estén corregidas.
+  - Si no es posible, evaluar el riesgo y aplicar mitigaciones (por ejemplo, restringir el uso de los paquetes afectados).
+
+- **Resumen:** El escaneo de Trivy es fundamental para asegurar que las imágenes Docker no contienen vulnerabilidades conocidas. El pipeline puede configurarse para fallar automáticamente si se detectan vulnerabilidades críticas, evitando así la promoción de imágenes inseguras a producción.
 
 ---
 
@@ -315,6 +458,9 @@ Antes de desplegar a producción, se requiere una aprobación manual desde la in
 ```
 > Este stage envía un correo solicitando aprobación y detiene la pipeline hasta que un responsable apruebe el despliegue.
 
+## Notificaciones automáticas para fallos en la pipeline
+
+![notis](images/noti.jpg)
 ---
 
 ## Informe de Cobertura y Calidad de Pruebas
@@ -686,6 +832,9 @@ Para el despliegue de la solución, se utilizó **Google Cloud Platform (GCP)**,
 
 - **Google Kubernetes Engine (GKE):**  
   Se desplegó un clúster de Kubernetes gestionado, facilitando la orquestación, escalabilidad y alta disponibilidad de los microservicios.  
+
+ ![GKE cluster](images/gke1.jpg)
+
 
   ![GKE cluster](images/cloud.jpg)
 

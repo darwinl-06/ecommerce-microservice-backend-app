@@ -16,6 +16,7 @@ pipeline {
         TF_VAR_project_id = 'proyecto-final-ingesoftv'
     }
 
+
     stages {
 
         stage('Init') {
