@@ -280,7 +280,8 @@ public ResponseEntity<String> newFeatureEndpoint() {
 
 ---
 
-###Retry 
+
+### Retry 
 
 **Propósito:**  
 Permite que los microservicios reintenten automáticamente una operación que ha fallado temporalmente antes de devolver un error.
@@ -336,7 +337,7 @@ Se integró SonarQube en la pipeline para realizar análisis estático de códig
 ![cover](images/sonar2.jpg)
 
 
-#### **Interpretación de los resultados de SonarQube**
+#### **Resultados de SonarQube**
 
 Las imágenes muestran el dashboard de SonarQube tras los análisis automáticos de los microservicios.  
 - **Todos los microservicios analizados han pasado el Quality Gate** (indicador verde "Passed"), lo que significa que cumplen con los umbrales de calidad definidos para seguridad, mantenibilidad y fiabilidad.
@@ -393,7 +394,7 @@ stage('Trivy Vulnerability Scan & Report') {
 
 ![cover](images/trivi1.jpg)
 
-#### **resultados de Trivy**
+#### **Resultados de Trivy**
 
 La imagen muestra un reporte generado por Trivy para la imagen Docker de `api-gateway`.  
 - **Se detectan varias vulnerabilidades críticas y altas** en paquetes del sistema base (por ejemplo, `curl` y `bash`).
@@ -412,6 +413,8 @@ La imagen muestra un reporte generado por Trivy para la imagen Docker de `api-ga
 ##  Notificaciones Automáticas de Fallos
 
 La pipeline está configurada para enviar notificaciones automáticas por correo electrónico en caso de fallo en cualquier etapa.
+
+![notis](images/noti.jpg)
 
 **Fragmento de Jenkinsfile:**
 ```groovy
@@ -458,10 +461,7 @@ Antes de desplegar a producción, se requiere una aprobación manual desde la in
 ```
 > Este stage envía un correo solicitando aprobación y detiene la pipeline hasta que un responsable apruebe el despliegue.
 
-## Notificaciones automáticas para fallos en la pipeline
 
-![notis](images/noti.jpg)
----
 
 ## Informe de Cobertura y Calidad de Pruebas
 
@@ -693,15 +693,7 @@ Se observan fluctuaciones normales bajo carga. Algunos picos (como en `favourite
 - `api-gateway` y `cloud-config` presentan uso constante.
 - Otros servicios muestran mayor variabilidad.
 
-#### CPU Utilisation (from requests / from limits)
 
-- **776% (clúster)** y **248% (ecommerce)** desde límites:  
-  > Indica throttling severo por sobreuso de CPU más allá de los límites asignados.
-
-#### Memory Utilisation (from requests / from limits)
-
-- **3040% (clúster)** y **1520% (ecommerce)** desde límites:  
-  > Riesgo crítico de OOMKilled o degradación por límites demasiado bajos. Urge revisar configuración de recursos en los manifiestos de Kubernetes.
 
 
 ##  ELK Stack en el Proyecto
