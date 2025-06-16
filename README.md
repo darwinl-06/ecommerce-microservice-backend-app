@@ -785,3 +785,4 @@ El proceso concluye con la generación automática de release notes usando `conv
 ![alt text](images/image_changelog_gen.png)
 
 ![alt text](images/image_release_notes_vista.png)
+
