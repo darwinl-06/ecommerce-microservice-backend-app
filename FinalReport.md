@@ -313,6 +313,44 @@ public ProductDto findById(final Integer productId) {
 
 ## CI/CD Avanzado
 
+## Pipelines: Desarrollo e Infraestructura
+
+En el proyecto se implementaron **dos pipelines principales** en Jenkins, cada una asociada a un repositorio diferente y con objetivos específicos:
+
+![cover](images/branch3.jpg)
+
+### 1. Pipeline de Desarrollo (`ecommerce-multibranch`)
+
+- **Repositorio:** Código fuente de la aplicación y microservicios (Spring Boot, Java).
+- **Propósito:** Automatizar el ciclo de vida de desarrollo de los microservicios, desde la integración continua hasta el despliegue.
+- **Características:**
+  - **Multibranch:** La pipeline detecta automáticamente ramas como `dev`, `stage` y `master`, ejecutando procesos independientes para cada una.
+  - **Etapas:** Compilación, ejecución de tests, análisis de calidad (SonarQube), escaneo de seguridad (Trivy, ZAP), construcción de imágenes Docker y despliegue en entornos de pruebas o producción.
+  - **Visibilidad:** Permite ver el estado de cada rama, el historial de ejecuciones, duración y resultados de cada build.
+  - **Automatización:** Cada push o pull request en el repositorio dispara la pipeline correspondiente, asegurando integración y entrega continua.
+
+![cover](images/branch1.jpg)
+
+La imagen muestra la pipeline `ecommerce-multibranch` con ramas activas (`dev`, `stage`, `master`). Se observa el estado de los últimos builds, la duración y si han sido exitosos o han fallado. Esto permite un control total sobre la calidad y estabilidad del código en cada etapa del ciclo de vida.
+
+---
+
+### 2. Pipeline de Infraestructura (`ecommerce-infrastructure`)
+
+- **Repositorio:** Código de infraestructura como código (IaC), principalmente Terraform.
+- **Propósito:** Automatizar la provisión, actualización y gestión de la infraestructura en Google Cloud Platform (GCP).
+- **Características:**
+  - **Multibranch:** Permite gestionar diferentes entornos (`dev`, `stage`, `master`) para la infraestructura, aplicando cambios de forma controlada.
+  - **Etapas:** Validación de sintaxis, plan de cambios (`terraform plan`), aplicación de cambios (`terraform apply`), y destrucción de recursos si es necesario.
+  - **Seguridad y control:** Solo se aplican cambios en producción tras revisiones y aprobaciones, minimizando riesgos.
+  - **Desacoplamiento:** La infraestructura se gestiona de forma independiente al código de la aplicación, siguiendo buenas prácticas de DevOps.
+
+![cover](images/branch2.jpg)
+La imagen muestra la pipeline `ecommerce-infrastructure`, donde se gestionan los recursos de GCP (clústeres de GKE, redes, almacenamiento, etc.). Cada rama representa un entorno diferente, permitiendo pruebas y despliegues controlados de la infraestructura.
+
+---
+
+
 ###  Análisis Estático de Código con SonarQube
 
 Se integró SonarQube en la pipeline para realizar análisis estático de código en cada build. El análisis se ejecuta automáticamente y la pipeline puede fallar si no se cumplen los umbrales de calidad.
@@ -461,6 +499,60 @@ Antes de desplegar a producción, se requiere una aprobación manual desde la in
 ```
 > Este stage envía un correo solicitando aprobación y detiene la pipeline hasta que un responsable apruebe el despliegue.
 
+## Pruebas de Seguridad Automatizadas
+
+### Implementación de las Pruebas de Seguridad
+
+En el proyecto se integraron **pruebas de seguridad automatizadas** como parte del pipeline de CI/CD, utilizando herramientas especializadas para detectar vulnerabilidades tanto en el código como en los servicios desplegados.  
+Las principales herramientas utilizadas fueron:
+
+- **Trivy:** Para escaneo de vulnerabilidades en imágenes Docker (análisis de dependencias y sistema base).
+- **OWASP ZAP (Zed Attack Proxy):** Para pruebas de seguridad dinámica (DAST) sobre los endpoints HTTP expuestos por los microservicios.
+
+#### **Implementación**
+
+```groovy
+stage('OWASP ZAP Security Scan') {
+    steps {
+        script {
+            def targetUrl = "http://favourite-service-container:8800"
+            def zapReport = "zap-reports/favourite-service-report.html"
+            sh """
+                mkdir -p zap-reports
+                docker run --rm -v \$(pwd)/zap-reports:/zap/wrk -t owasp/zap2docker-stable zap-baseline.py \
+                    -t ${targetUrl} \
+                    -r favourite-service-report.html \
+                    -J favourite-service-report.json \
+                    -m 3
+            """
+            // Publicar el reporte HTML en Jenkins
+            publishHTML(target: [
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'zap-reports',
+                reportFiles: 'favourite-service-report.html',
+                reportName: 'OWASP ZAP Scan Report'
+            ])
+        }
+    }
+}
+```
+- Ejecuta un contenedor de OWASP ZAP apuntando al microservicio desplegado (`favourite-service`).
+- Genera un reporte HTML y JSON con los resultados del escaneo.
+- Publica el reporte en la interfaz de Jenkins para su revisión.
+- Puede configurarse para fallar la pipeline si se detectan vulnerabilidades de severidad alta o crítica.
+
+###  Reporte de ZAP 
+
+![zap](images/zap.jpg)
+
+#### **Resumen de Alertas**
+- **High (Alta):** 0 alertas
+- **Medium (Media):** 1 alerta
+- **Low (Baja):** 1 alerta
+- **Informational:** 3 alertas
+- **False Positives:** 0
 
 
 ## Informe de Cobertura y Calidad de Pruebas
@@ -942,7 +1034,7 @@ Este manual describe los procedimientos esenciales para operar, mantener y monit
 - **Prometheus:** Recolecta métricas de los microservicios y del clúster.
 - **Grafana:** Visualiza dashboards de métricas.
 - **Acceso a Grafana:**  
-  - URL: http://127.0.0.1:9090/query
+  - URL: http://35.192.73.86/
   - Usuario/contraseña
 
 ### Alertas
