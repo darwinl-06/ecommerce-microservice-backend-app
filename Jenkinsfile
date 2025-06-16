@@ -52,6 +52,11 @@ pipeline {
         }
 
         stage('Get GKE Credentials') {
+            when {
+                anyOf {
+                    branch 'master'
+                }
+            }
             steps {
                 script {
                     def clusterName = "ecommerce-cluster-${env.SPRING_PROFILES_ACTIVE}"
