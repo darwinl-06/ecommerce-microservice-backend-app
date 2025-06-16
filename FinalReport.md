@@ -690,7 +690,12 @@ Para el despliegue de la solución, se utilizó **Google Cloud Platform (GCP)**,
 - **VPC y Networking:**  
   Configuración de redes privadas, balanceadores de carga y reglas de firewall para asegurar la comunicación entre servicios y la exposición controlada hacia el exterior.
 
----
+
+
+## Pods Subidos
+
+![Consumo de créditos](images/pods.jpg)
+
 
 ### Costos de Infraestructura
 
