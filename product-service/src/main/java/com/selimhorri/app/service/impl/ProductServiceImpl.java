@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.annotation.Backoff;
 
 import com.selimhorri.app.dto.ProductDto;
 import com.selimhorri.app.exception.wrapper.ProductNotFoundException;
@@ -35,6 +37,11 @@ public class ProductServiceImpl implements ProductService {
 	}
 	
 	@Override
+	@Retryable(
+	    value = { ProductNotFoundException.class },
+	    maxAttempts = 3,
+	    backoff = @Backoff(delay = 1000)
+	)
 	public ProductDto findById(final Integer productId) {
 		log.info("*** ProductDto, service; fetch product by id *");
 		return this.productRepository.findById(productId)

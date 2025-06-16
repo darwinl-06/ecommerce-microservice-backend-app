@@ -10,15 +10,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import static org.mockito.Mockito.when;
 
+@SpringJUnitConfig
+@EnableRetry
 @ExtendWith(MockitoExtension.class)
+@SpringBootTest
 public class ProductServiceImplTest {
 
     @Mock
@@ -48,3 +53,4 @@ public class ProductServiceImplTest {
 
 
 }
+
