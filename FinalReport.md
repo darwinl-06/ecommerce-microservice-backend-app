@@ -558,7 +558,7 @@ Se observan fluctuaciones normales bajo carga. Algunos picos (como en `favourite
   > Riesgo crítico de OOMKilled o degradación por límites demasiado bajos. Urge revisar configuración de recursos en los manifiestos de Kubernetes.
 
 
-## Documentación: ELK Stack en el Proyecto
+##  ELK Stack en el Proyecto
 
 
 **ELK** es un stack de herramientas de código abierto compuesto por:
@@ -660,6 +660,20 @@ Los valores personalizados para cada componente están en:
 - `modules/monitoring/logstash-values.yaml`
 - `modules/monitoring/kibana-values.yaml`
 - `modules/monitoring/filebeat-values.yaml`
+
+
+## Alertas para situaciones criticas
+
+Cuando ocurre una situación crítica (por ejemplo, caída de kube-proxy), se envía automáticamente un correo electrónico al equipo, como se muestra en la siguiente imagen:
+
+![alertas](images/alertas.png)
+
+El correo incluye:
+- Nombre y severidad de la alerta.
+- Descripción y resumen del problema.
+- Enlace directo a Alertmanager y a la documentación de resolución (runbook).
+
+
 
 
 ## Costos de Infraestructura y Uso de Google Cloud para el Despliegue
