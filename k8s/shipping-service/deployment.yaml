@@ -16,7 +16,7 @@ spec:
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8600"
-        prometheus.io/path: "/shipping-service/actuator/prometheus"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
         - name: shipping-service
@@ -57,14 +57,14 @@ spec:
           #     mountPath: /etc/config
           livenessProbe:
             httpGet:
-              path: /shipping-service/actuator/health 
+              path: /actuator/health
               port: 8600
             initialDelaySeconds: 180
             periodSeconds: 10
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /shipping-service/actuator/health 
+              path: /actuator/health 
               port: 8600
             initialDelaySeconds: 180
             periodSeconds: 10
