@@ -272,10 +272,9 @@ resilience4j:
 - Más llamadas mínimas (10 vs 5) para evitar falsos positivos.
 - Duración de espera mayor (10s vs 5s) para dar más tiempo de recuperación.
 - Nuevos parámetros para llamadas lentas (slow-call-duration-threshold y slow-call-rate-threshold).
-
-
-![cover](images/test1.png)
-
+- Tiempo de espera inicial reducido (120s vs 240s) para detectar problemas más rápido.
+- Intervalo de sondeo más frecuente (10s vs 15s).
+- Nuevo readinessProbe para verificar si el servicio está listo para recibir tráfico.
 
 ---
 
