@@ -14,7 +14,7 @@ Para el desarrollo del proyecto se implementó la metodología ágil **Scrum**, 
 
 Se definió y documentó una estrategia de branching basada en **GitFlow**, adaptada a las necesidades del equipo y del proyecto. Los principales branches utilizados fueron:
 
-- **main**: Rama principal, contiene el código estable y listo para producción.
+- **prod**: Rama principal, contiene el código estable y listo para producción.
 - **dev**: Rama de desarrollo, donde se integran las nuevas funcionalidades antes de pasar a stage.
 - **stage**: Rama de pre-producción, utilizada para pruebas integradas antes de pasar a producción.
 
