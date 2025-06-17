@@ -625,6 +625,16 @@ Todos los tests existentes pasan correctamente, lo que indica que el código cub
 - **Cobertura baja (`user-service`):** Es baja (20%), lo que representa un riesgo. Se recomienda crear más tests, especialmente para los paquetes con menor cobertura.
 - **Calidad de pruebas:** Todos los tests pasan, pero la calidad general
 
+## Métricas de Negocio 
+
+Además de las métricas técnicas, se implementó la recolección de métricas de negocio para entender el impacto de la aplicación en los objetivos comerciales. Se expusieron a través de endpoints de métricas personalizados y se visualizaron en Grafana. 
+
+- Pedidos por minuto: Tasa de creación de nuevos pedidos. 
+
+- Tasa de registro de usuarios: Número de nuevos clientes registrados por hora. 
+
+- Valor promedio del pedido (AOV): Monto promedio de las compras. 
+
 
 ## Change Management y Planes de Rollback
 
@@ -1103,3 +1113,83 @@ Este manual describe los procedimientos esenciales para operar, mantener y monit
 - Las credenciales sensibles se almacenan en Secret Manager o como Kubernetes Secrets.
 
 
+## Conclusiones 
+
+##  Logros Claves
+
+- **Arquitectura de Microservicios Implementada:**  
+  Se logró diseñar y desplegar una arquitectura basada en microservicios, permitiendo la separación de responsabilidades en servicios como usuario, producto, orden, pago, favoritos, envío, gateway y configuración centralizada. Esto facilita la escalabilidad, mantenibilidad y despliegue independiente de cada componente.
+
+- **Automatización y Orquestación:**  
+  Se implementaron scripts de despliegue con Docker Compose y Kubernetes, permitiendo la orquestación eficiente de los servicios y su escalabilidad horizontal. Además, se integró la configuración centralizada y descubrimiento de servicios, mejorando la resiliencia y flexibilidad del sistema.
+
+- **Pruebas Automatizadas y Calidad de Software:**  
+  Se desarrollaron pruebas unitarias, de integración y end-to-end, asegurando la calidad y robustez del sistema. Los reportes de pruebas muestran una alta cobertura y cero fallos, lo que evidencia la fiabilidad del software.
+
+- **Monitorización y Observabilidad:**  
+  Se integraron métricas técnicas y de negocio, así como herramientas de monitoreo (Prometheus, Grafana, Zipkin), permitiendo la observabilidad del sistema y la rápida detección de incidencias.
+
+- **Infraestructura como Código:**  
+  Se utilizó Terraform para definir y desplegar la infraestructura en la nube, asegurando reproducibilidad, trazabilidad y facilidad de gestión de los entornos de desarrollo, staging y producción.
+
+---
+
+##  Lecciones Estratégicas
+
+- **Importancia de la Desacoplación:**  
+  La separación de servicios permite que los equipos trabajen de forma independiente, acelera el desarrollo y facilita la adopción de nuevas tecnologías en partes específicas del sistema.
+
+- **Gestión de la Configuración y Seguridad:**  
+  Centralizar la configuración y gestionar secretos de forma segura es fundamental para evitar errores y vulnerabilidades, especialmente en entornos distribuidos.
+
+- **Automatización como Pilar:**  
+  La automatización de pruebas, despliegues y provisión de infraestructura reduce errores humanos, acelera el time-to-market y permite responder rápidamente a cambios o incidencias.
+
+- **Observabilidad y Métricas de Negocio:**  
+  Medir no solo la salud técnica, sino también el impacto en el negocio (órdenes, pagos, usuarios activos) es clave para tomar decisiones informadas y alinear la tecnología con los objetivos empresariales.
+
+---
+
+##  Técnicas y Herramientas Aprendidas
+
+- **Spring Boot y Java para Microservicios:**  
+  Se profundizó en el desarrollo de microservicios con Spring Boot, aplicando patrones como API Gateway, Service Discovery y Config Server.
+
+- **Docker y Kubernetes:**  
+  Se adquirió experiencia en la creación de imágenes Docker, definición de despliegues y servicios en Kubernetes, y gestión de entornos multi-servicio.
+
+- **Pruebas Automatizadas (JUnit, E2E):**  
+  Se implementaron pruebas unitarias, de integración y end-to-end, mejorando la calidad y confianza en el software.
+
+- **Monitorización (Micrometer, Prometheus, Grafana, Zipkin):**  
+  Se aprendió a instrumentar servicios para exponer métricas y trazas, facilitando la observabilidad y el análisis de rendimiento.
+
+- **Infraestructura como Código (Terraform):**  
+  Se aplicaron buenas prácticas de IaC para gestionar recursos cloud de forma declarativa y versionada.
+
+---
+
+##  Futuras Mejoras
+
+- **Aumentar la Cobertura de Pruebas:**  
+  Incluir más pruebas automatizadas, especialmente de integración y pruebas de carga, para asegurar el rendimiento bajo alta demanda.
+
+- **Implementar Seguridad Avanzada:**  
+  Integrar autenticación y autorización robusta (OAuth2, JWT), así como escaneo de vulnerabilidades en imágenes y dependencias.
+
+- **Optimización de Costos y Recursos:**  
+  Ajustar el uso de recursos en Kubernetes, implementar autoescalado y optimizar el consumo de infraestructura para reducir costos.
+
+- **Despliegue Continuo (CI/CD):**  
+  Mejorar los pipelines de integración y despliegue continuo para automatizar aún más la entrega de nuevas versiones y parches.
+
+- **Mejorar la Experiencia de Usuario:**  
+  Recoger métricas de experiencia de usuario y feedback para iterar sobre la interfaz y funcionalidades del sistema.
+
+- **Escalabilidad Global:**  
+  Preparar la arquitectura para despliegues multi-región y balanceo global, permitiendo soportar usuarios en diferentes ubicaciones geográficas.
+
+- **Métricas de Negocio Avanzadas:**  
+  Profundizar en la analítica de negocio, integrando dashboards que permitan visualizar KPIs clave y tomar decisiones estratégicas basadas en datos.
+
+---
