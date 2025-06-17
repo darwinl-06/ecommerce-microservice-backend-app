@@ -208,6 +208,15 @@ Se utiliza Zipkin para trazabilidad distribuida, permitiendo rastrear peticiones
 - Despliegue de `zipkin`.
 - Variables de entorno como `SPRING_ZIPKIN_BASE_URL`.
 
+## Patrón Proxy
+Implementado en el módulo proxy-client, proporciona una capa de abstracción para la comunicación entre servicios
+-  UserClientService
+-  OrderClientService
+
+## Patrón Circuit Breaker
+Implementado para manejar fallos en la comunicación entre servicios,
+proporciona resiliencia en la arquitectura distribuida
+
 
 ## Patrones de Diseño Implementados
 
@@ -237,6 +246,33 @@ public UserDto fallbackGetUser(Integer userId, Throwable t) {
     return new UserDto(); // o retorna un mensaje de error personalizado
 }
 ```
+
+```
+resilience4j:
+  circuitbreaker:
+    instances:
+      [serviceName]:
+        register-health-indicator: true
+        event-consumer-buffer-size: 20
+        automatic-transition-from-open-to-half-open-enabled: true
+        failure-rate-threshold: 30
+        minimum-number-of-calls: 10
+        permitted-number-of-calls-in-half-open-state: 5
+        sliding-window-size: 20
+        wait-duration-in-open-state: 10s
+        sliding-window-type: TIME_BASED
+        slow-call-duration-threshold: 2s
+        slow-call-rate-threshold: 30
+```
+![cover](images/test1.png)
+
+## Mejoras:
+- Ventana deslizante basada en tiempo (TIME_BASED) en lugar de conteo, para mejor adaptación a la carga real.
+- Umbral de fallos más bajo (30% vs 50%) para activar el circuit breaker más rápido.
+- Más llamadas mínimas (10 vs 5) para evitar falsos positivos.
+- Duración de espera mayor (10s vs 5s) para dar más tiempo de recuperación.
+- Nuevos parámetros para llamadas lentas (slow-call-duration-threshold y slow-call-rate-threshold).
+
 
 ![cover](images/test1.png)
 
