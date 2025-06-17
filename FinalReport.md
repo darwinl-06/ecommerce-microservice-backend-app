@@ -575,12 +575,6 @@ Se muestra qué porcentaje del código fuente es ejecutado por los tests automá
 | Métodos cubiertos             | 160 de 218                   |
 | Tests fallidos                | 0                            |
 
-**Observaciones:**
-- Los paquetes `com.selimhorri.app.dto` y `com.selimhorri.app.exception.payload` tienen menor cobertura (21% y 18% respectivamente).
-- Otros paquetes como `resource`, `service.impl`, `helper`, etc., tienen 0% de cobertura, lo que indica que no están siendo probados por los tests.
-- La mayoría de los métodos y líneas están cubiertos, pero hay áreas de mejora en DTOs y excepciones.
-
----
 
 ![cover](images/reporte2.jpg)
 
@@ -594,13 +588,6 @@ Se muestra qué porcentaje del código fuente es ejecutado por los tests automá
 | Métodos cubiertos             | 297 de 395                   |
 | Tests fallidos                | 0                            |
 
-**Observaciones:**
-- La cobertura es significativamente más baja que en `product-service`.
-- Los paquetes `dto` y `resource` tienen coberturas bajas (29% y 6% respectivamente).
-- Hay muchos métodos y líneas no cubiertas, especialmente en DTOs y helpers.
-- Se recomienda aumentar la cobertura en los paquetes críticos para mejorar la calidad y detectar errores antes.
-
----
 
 ![cover](images/reporte3.jpg)
 
@@ -613,16 +600,7 @@ Se muestra qué porcentaje del código fuente es ejecutado por los tests automá
 | com.selimhorri.app.unit.service          | 4.5 seg  | 0        | 12      | 12    |
 | **Total**                               | 2:49 min | **0**    | **25**  | **25**|
 
-Todos los tests existentes pasan correctamente, lo que indica que el código cubierto por los tests funciona como se espera. Sin embargo, la baja cobertura en algunos servicios (especialmente en `user-service`) sugiere que hay partes del código que no están siendo probadas y podrían contener errores no detectados.
-
----
-
-### Conclusión y recomendaciones
-
-- **Cobertura alta (`product-service`):** Es buena (85%), pero aún hay áreas (DTOs, excepciones) que pueden mejorarse.
-- **Cobertura baja (`user-service`):** Es baja (20%), lo que representa un riesgo. Se recomienda crear más tests, especialmente para los paquetes con menor cobertura.
-- **Calidad de pruebas:** Todos los tests pasan, pero la calidad general
-
+--
 
 ## Change Management y Planes de Rollback
 
