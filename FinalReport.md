@@ -14,7 +14,7 @@ Para el desarrollo del proyecto se implementó la metodología ágil **Scrum**, 
 
 Se definió y documentó una estrategia de branching basada en **GitFlow**, adaptada a las necesidades del equipo y del proyecto. Los principales branches utilizados fueron:
 
-- **main**: Rama principal, contiene el código estable y listo para producción.
+- **prod**: Rama principal, contiene el código estable y listo para producción.
 - **dev**: Rama de desarrollo, donde se integran las nuevas funcionalidades antes de pasar a stage.
 - **stage**: Rama de pre-producción, utilizada para pruebas integradas antes de pasar a producción.
 
@@ -540,9 +540,7 @@ stage('OWASP ZAP Security Scan') {
 ```
 - Ejecuta un contenedor de OWASP ZAP apuntando al microservicio desplegado (`favourite-service`).
 - Genera un reporte HTML y JSON con los resultados del escaneo.
-- Publica el reporte en la interfaz de Jenkins para su revisión.
-- Puede configurarse para fallar la pipeline si se detectan vulnerabilidades de severidad alta o crítica.
-
+- 
 ###  Reporte de ZAP 
 
 ![zap](images/zap.jpg)
@@ -577,12 +575,6 @@ Se muestra qué porcentaje del código fuente es ejecutado por los tests automá
 | Métodos cubiertos             | 160 de 218                   |
 | Tests fallidos                | 0                            |
 
-**Observaciones:**
-- Los paquetes `com.selimhorri.app.dto` y `com.selimhorri.app.exception.payload` tienen menor cobertura (21% y 18% respectivamente).
-- Otros paquetes como `resource`, `service.impl`, `helper`, etc., tienen 0% de cobertura, lo que indica que no están siendo probados por los tests.
-- La mayoría de los métodos y líneas están cubiertos, pero hay áreas de mejora en DTOs y excepciones.
-
----
 
 ![cover](images/reporte2.jpg)
 
@@ -596,13 +588,6 @@ Se muestra qué porcentaje del código fuente es ejecutado por los tests automá
 | Métodos cubiertos             | 297 de 395                   |
 | Tests fallidos                | 0                            |
 
-**Observaciones:**
-- La cobertura es significativamente más baja que en `product-service`.
-- Los paquetes `dto` y `resource` tienen coberturas bajas (29% y 6% respectivamente).
-- Hay muchos métodos y líneas no cubiertas, especialmente en DTOs y helpers.
-- Se recomienda aumentar la cobertura en los paquetes críticos para mejorar la calidad y detectar errores antes.
-
----
 
 ![cover](images/reporte3.jpg)
 
@@ -886,7 +871,7 @@ Ejemplo de salida:
 
 ## Acceso y Uso
 
-- **Kibana**: Usualmente se expone como un servicio. Puedes acceder a la interfaz web para visualizar y consultar logs.
+- **Kibana**: Se expone como un servicio. Puedes acceder a la interfaz web para visualizar y consultar logs.
 - **Elasticsearch**: Puede ser accedido por aplicaciones o herramientas para búsquedas avanzadas.
 - **Logstash y Filebeat**: Funcionan en segundo plano recolectando y procesando logs.
 
