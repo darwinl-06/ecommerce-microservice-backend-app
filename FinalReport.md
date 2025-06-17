@@ -589,6 +589,13 @@ Se muestra qué porcentaje del código fuente es ejecutado por los tests automá
 Todos los tests existentes pasan correctamente, lo que indica que el código cubierto por los tests funciona como se espera
 ---
 
+## Metricas Tecnicas
+
+Las métricas técnicas miden el estado y rendimiento del sistema. Incluyen datos como uso de CPU, latencia, errores y disponibilidad. Sirven para detectar problemas, optimizar recursos y mantener los servicios funcionando correctamente.
+
+![metricas](images/metricas.jpg)
+![metricas](images/metricas2.jpg)
+
 
 ## Métricas de Negocio 
 
@@ -599,6 +606,8 @@ Además de las métricas técnicas, se implementó la recolección de métricas 
 - Tasa de registro de usuarios: Número de nuevos clientes registrados por hora. 
 
 - Valor promedio del pedido (AOV): Monto promedio de las compras. 
+
+
 
 
 ## Change Management y Planes de Rollback
