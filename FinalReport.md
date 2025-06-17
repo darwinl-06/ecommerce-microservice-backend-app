@@ -540,9 +540,7 @@ stage('OWASP ZAP Security Scan') {
 ```
 - Ejecuta un contenedor de OWASP ZAP apuntando al microservicio desplegado (`favourite-service`).
 - Genera un reporte HTML y JSON con los resultados del escaneo.
-- Publica el reporte en la interfaz de Jenkins para su revisión.
-- Puede configurarse para fallar la pipeline si se detectan vulnerabilidades de severidad alta o crítica.
-
+- 
 ###  Reporte de ZAP 
 
 ![zap](images/zap.jpg)
