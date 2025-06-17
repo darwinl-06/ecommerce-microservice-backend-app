@@ -852,7 +852,7 @@ Ejemplo de salida:
 
 ## Acceso y Uso
 
-- **Kibana**: Usualmente se expone como un servicio. Puedes acceder a la interfaz web para visualizar y consultar logs.
+- **Kibana**: Se expone como un servicio. Puedes acceder a la interfaz web para visualizar y consultar logs.
 - **Elasticsearch**: Puede ser accedido por aplicaciones o herramientas para búsquedas avanzadas.
 - **Logstash y Filebeat**: Funcionan en segundo plano recolectando y procesando logs.
 
