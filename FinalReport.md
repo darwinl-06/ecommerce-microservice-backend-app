@@ -75,11 +75,6 @@ Cada historia de usuario en Jira cuenta con criterios de aceptación claros y me
 ![criterios](images/criterios.png)
 
 
----
-
-**Resumen:** 
-Se implementó Scrum con Jira, se documentaron y gestionaron historias de usuario y sprints, y se utilizó una estrategia de branching basada en GitFlow con ramas main, dev y stage, cumpliendo con las mejores prácticas de desarrollo ágil y control de versiones.
-
 
 
 ## Diagrama de infraestructura
@@ -87,7 +82,7 @@ Se implementó Scrum con Jira, se documentaron y gestionaron historias de usuari
 ![diagramafinal](images/diagramafinal.png)
 
 ##  Cliente y Entrada al Sistema
-- **Client:** Los usuarios o sistemas externos interactúan con la plataforma a través de un cliente (navegador, app, etc.).
+- **Client:** Los usuarios o sistemas externos interactúan con la plataforma a través de un cliente 
 - **Application Load Balancer:** Todas las peticiones entrantes pasan por un balanceador de carga, que distribuye el tráfico de manera eficiente y asegura alta disponibilidad.
 
 ## Ciclo DevOps y Despliegue
@@ -122,7 +117,7 @@ Se implementó Scrum con Jira, se documentaron y gestionaron historias de usuari
 - **Kafka:** Permite la comunicación asíncrona y desacoplada entre microservicios, facilitando la escalabilidad y el procesamiento de eventos en tiempo real.
 
 
- Ambientes Definidos
+ ## Ambientes Definidos
 
 El ciclo de vida del software se gestiona a través de tres ambientes principales:
 
@@ -378,12 +373,9 @@ Se integró SonarQube en la pipeline para realizar análisis estático de códig
 #### **Resultados de SonarQube**
 
 Las imágenes muestran el dashboard de SonarQube tras los análisis automáticos de los microservicios.  
-- **Todos los microservicios analizados han pasado el Quality Gate** (indicador verde "Passed"), lo que significa que cumplen con los umbrales de calidad definidos para seguridad, mantenibilidad y fiabilidad.
+- **Todos los microservicios analizados han pasado el Quality Gate** (indicador"Passed"), lo que significa que cumplen con los umbrales de calidad definidos para seguridad, mantenibilidad y fiabilidad.
 - **No se detectaron issues de seguridad, fiabilidad ni mantenibilidad** (todos los indicadores en "A").
-- **Cobertura de código y duplicación:** En los ejemplos mostrados, la cobertura de tests es 0% en algunos servicios, lo que indica que no se han instrumentado tests automáticos o no se han reportado correctamente. Sin embargo, no hay duplicación de código.
-- **Resumen:** El código es seguro, confiable y mantenible según SonarQube, pero se recomienda mejorar la cobertura de tests para mayor robustez.
 
----
 
 ## Escaneo de Vulnerabilidades en Contenedores con Trivy
 
@@ -434,19 +426,13 @@ stage('Trivy Vulnerability Scan & Report') {
 
 #### **Resultados de Trivy**
 
-La imagen muestra un reporte generado por Trivy para la imagen Docker de `api-gateway`.  
-- **Se detectan varias vulnerabilidades críticas y altas** en paquetes del sistema base (por ejemplo, `curl` y `bash`).
+ Reporte generado por Trivy para la imagen Docker de `api-gateway`.  
+
 - **Columnas clave:**  
   - **Severity:** Indica el nivel de criticidad (CRITICAL/HIGH).
   - **Installed Version / Fixed Version:** Muestra la versión instalada y la versión donde el problema está corregido.
   - **Links:** Proporciona enlaces a los reportes oficiales de cada vulnerabilidad (CVE).
-- **Acción recomendada:**  
-  - Actualizar la imagen base a una versión más reciente donde las vulnerabilidades estén corregidas.
-  - Si no es posible, evaluar el riesgo y aplicar mitigaciones (por ejemplo, restringir el uso de los paquetes afectados).
 
-- **Resumen:** El escaneo de Trivy es fundamental para asegurar que las imágenes Docker no contienen vulnerabilidades conocidas. El pipeline puede configurarse para fallar automáticamente si se detectan vulnerabilidades críticas, evitando así la promoción de imágenes inseguras a producción.
-
----
 
 ##  Notificaciones Automáticas de Fallos
 
@@ -600,15 +586,9 @@ Se muestra qué porcentaje del código fuente es ejecutado por los tests automá
 | com.selimhorri.app.unit.service          | 4.5 seg  | 0        | 12      | 12    |
 | **Total**                               | 2:49 min | **0**    | **25**  | **25**|
 
-Todos los tests existentes pasan correctamente, lo que indica que el código cubierto por los tests funciona como se espera. Sin embargo, la baja cobertura en algunos servicios (especialmente en `user-service`) sugiere que hay partes del código que no están siendo probadas y podrían contener errores no detectados.
-
+Todos los tests existentes pasan correctamente, lo que indica que el código cubierto por los tests funciona como se espera
 ---
 
-### Conclusión y recomendaciones
-
-- **Cobertura alta (`product-service`):** Es buena (85%), pero aún hay áreas (DTOs, excepciones) que pueden mejorarse.
-- **Cobertura baja (`user-service`):** Es baja (20%), lo que representa un riesgo. Se recomienda crear más tests, especialmente para los paquetes con menor cobertura.
-- **Calidad de pruebas:** Todos los tests pasan, pero la calidad general
 
 ## Métricas de Negocio 
 
@@ -630,13 +610,12 @@ El proceso de Change Management asegura que todos los cambios en la arquitectura
 ### Fases del Proceso
 
  **Solicitud de Cambio (RFC - Request for Change)**
-   - Todo cambio debe ser propuesto mediante un issue o ticket en el sistema de gestión de proyectos (por ejemplo, GitHub Issues, Jira).
    - La solicitud debe incluir: descripción, justificación, impacto esperado, riesgos y plan de pruebas.
 
  **Evaluación y Aprobación**
-   - El equipo de desarrollo y/o arquitecto revisa la solicitud.
+   - El equipo revisa la solicitud.
    - Se evalúan riesgos, dependencias y se prioriza el cambio.
-   - Si es aprobado, se asigna a un responsable y se planifica en el sprint correspondiente.
+   - Si es aprobado, se asigna a un responsable
 
  **Desarrollo y Pruebas**
    - El cambio se implementa en una rama específica.
@@ -653,7 +632,6 @@ El proceso de Change Management asegura que todos los cambios en la arquitectura
 
  **Documentación y Comunicación**
    - Se actualizan los documentos técnicos y de usuario.
-   - Se comunica el cambio a los stakeholders mediante Release Notes.
 
  **Cierre**
    - Se cierra la solicitud de cambio y se archiva la documentación asociada.
@@ -661,12 +639,11 @@ El proceso de Change Management asegura que todos los cambios en la arquitectura
 
 ##  Planes de Rollback
 
-
-El plan de rollback define los pasos a seguir para revertir un despliegue en caso de que se detecten problemas críticos tras la liberación de una nueva versión.
+Define los pasos a seguir para revertir un despliegue en caso de que se detecten problemas críticos tras la liberación de una nueva versión.
 
 ### Estrategia General
 
-- **Despliegue Blue/Green o Canary:** Mantener la versión anterior activa hasta validar la nueva.
+- **Despliegue:** Mantener la versión anterior activa hasta validar la nueva.
 - **Backups:** Realizar backups de bases de datos y configuraciones antes de cada despliegue.
 - **Automatización:** Usar scripts o pipelines para revertir a la versión anterior de los servicios y configuraciones.
 
@@ -674,7 +651,7 @@ El plan de rollback define los pasos a seguir para revertir un despliegue en cas
 
  **Identificación del Problema**
    - Monitorear logs y métricas tras el despliegue.
-   - Si se detecta un fallo crítico, notificar al equipo y a los stakeholders.
+   - Si se detecta un fallo crítico, notificar al equipo.
 
  **Ejecución del Rollback**
    - Revertir el despliegue usando el pipeline de CI/CD (por ejemplo, desplegar la imagen Docker de la versión anterior).
@@ -683,7 +660,7 @@ El plan de rollback define los pasos a seguir para revertir un despliegue en cas
 
  **Validación**
    - Verificar que el sistema funciona correctamente con la versión anterior.
-   - Realizar pruebas básicas de smoke testing.
+
 
  **Documentación**
    - Registrar el incidente, las causas y las acciones tomadas.
@@ -696,7 +673,7 @@ Prometheus actúa como el sistema principal para la recolección de métricas de
 
 ![prome](images/prome1.jpg)
 
-La imagen muestra la interfaz de consulta de Prometheus, lista para ejecutar expresiones PromQL. Esto indica que Prometheus está operativo y listo para consultar las métricas recolectadas de los diferentes **targets** (servicios o componentes monitoreados).
+Interfaz de consulta de Prometheus, lista para ejecutar expresiones PromQL. Indica que Prometheus está operativo y listo para consultar las métricas recolectadas de los diferentes **targets** (servicios o componentes monitoreados).
 
 ## Reglas de Alertas en Prometheus
 
@@ -748,7 +725,7 @@ Visualizaciones clave sobre uso de recursos a nivel de infraestructura.
 - **CPU Utilisation**: 15.4%
 - **CPU Requests Commitment**: 36.2%
 - **CPU Limits Commitment**: 264%  
-  > Esto indica que los límites de CPU superan por mucho los recursos disponibles, lo cual puede causar throttling.
+
 
 - **Memory Utilisation**: 31.5%
 - **Memory Requests Commitment**: 13.5%
@@ -781,17 +758,14 @@ Se observan fluctuaciones normales bajo carga. Algunos picos (como en `favourite
 - Otros servicios muestran mayor variabilidad.
 
 
-
-
 ##  ELK Stack en el Proyecto
-
 
 **ELK** es un stack de herramientas de código abierto compuesto por:
 
 - **Elasticsearch**: Motor de búsqueda y análisis de datos.
 - **Logstash**: Pipeline para ingesta, transformación y envío de logs.
 - **Kibana**: Plataforma de visualización de datos.
-- **Filebeat** (complementario): Agente ligero para enviar logs a Logstash o Elasticsearch.
+- **Filebeat** : Agente ligero para enviar logs a Logstash o Elasticsearch.
 
 
 ### ¿Para que nos sirve ELK en este proyecto?
